@@ -1,0 +1,244 @@
+
+{
+    "Gujarat": {
+        "districts": [
+            "Ambaji",
+            "Amirgarh",
+            "Bhilad",
+            "Chhota Udepur",
+            "Dahod",
+            "Gundari",
+            "Hazira",
+            "Jamnagar",
+            "Kaprada",
+            "Sagbarta",
+            "Samkhiyali",
+            "Shamlaji",
+            "Songadh",
+            "Tharad (Khoda)",
+            "Thavar",
+            "Waghai",
+            "Zalod"
+        ],
+        "5+1": {},
+        "6+1": {
+            "Weekly": {
+                "amount": 140
+            },
+            "Monthly": {
+                "amount": 430
+            },
+            "Yearly": {
+                "amount": 3030
+            }
+        },
+        "7+1": {},
+        "Super Carry": {}
+    },
+    "Bihar": {
+        "districts": [
+            "Araria",
+            "Arawal",
+            "Aurangabad",
+            "Banka",
+            "Begusarai",
+            "Bettiah",
+            "Bhabhua",
+            "Bhagalpur",
+            "Bhojpur",
+            "Buxur",
+            "Chapara",
+            "Darbhanga",
+            "Gaya",
+            "Gopalganj",
+            "Jamui",
+            "Jehanbad",
+            "Katihar",
+            "Khagaria",
+            "Kishanganj",
+            "Lakshisarai",
+            "Madhepura",
+            "Madhubani",
+            "Motihari",
+            "Munger",
+            "Muzaffarpur",
+            "Nalanda",
+            "Nawada",
+            "Patna",
+            "Purnea",
+            "Rohtas",
+            "Saharsa",
+            "Samastipur",
+            "Sheikhpura",
+            "Sheohr",
+            "Sitamarhi",
+            "Siwan",
+            "Supaul",
+            "Vaishali"
+        ],
+        "4+1": {
+            "Weekly": {
+                "amount": 330
+            },
+            "Quarterly": {
+                "amount": 830
+            },
+            "Yearly": {
+                "amount": 3230
+            }
+        },
+        "6+1": {
+            "1 Week": {
+                "amount": 330
+            },
+            "Quarterly": {
+                "amount": 1080
+            },
+            "Yearly": {
+                "amount": 4230
+            }
+        }
+    },
+    "Jharkhand": {
+        "districts": [
+            "Bokaro",
+            "Chatra",
+            "Deogarh",
+            "Dhanbad",
+            "Dumka",
+            "East Singhbhum (Jamshedpur)",
+            "Garhwa",
+            "Giridih"
+        ],
+        "4+1": {
+            "Week": {
+                "amount": 320
+            },
+            "2 Week": {
+                "amount": 520
+            },
+            "Monthly": {
+                "amount": 820
+            }
+        },
+        "6+1": {
+            "1 Week": {
+                "amount": 320
+            },
+            "2 Week": {
+                "amount": 520
+            },
+            "Monthly": {
+                "amount": 820
+            }
+        }
+    },
+    "Maharashtra": {
+        "districts": [
+            "Ahmednagar",
+            "Akluj",
+            "Akola",
+            "Ambejogai",
+            "Amrawati",
+            "Aurangabad",
+            "Baramati",
+            "Beed",
+            "Bhandara",
+            "Borivali",
+            "Buldhana",
+            "Chandrapur",
+            "Dhule",
+            "Gadchiroli",
+            "Gondhia",
+            "Hingoli",
+            "Jalgaon",
+            "Jalna",
+            "Kalyan",
+            "Karad",
+            "Kolhapur",
+            "Latur",
+            "Malegaon",
+            "Mamdurbar",
+            "Mumbai (Central)",
+            "Mumbai (East)",
+            "Mumbai (West)",
+            "Nagpur (East)",
+            "Nagpur (Rural)",
+            "Nagpur (U)",
+            "Nanded",
+            "Nasik",
+            "Osmanabad",
+            "Panvel",
+            "Parbhani",
+            "Pen (Raibad)",
+            "Pimpri-Chinchwad",
+            "Pune",
+            "Ratnagiri",
+            "Sangli",
+            "Satara",
+            "Sindhurg (Kudal)",
+            "Solapur",
+            "Srirampur",
+            "Thane",
+            "Vasai/New Mumbai",
+            "Wardha",
+            "Washim",
+            "Yawatmal"
+        ],
+        "4+1": {
+            "Monthly": {
+                "amount": 1130
+            }
+        },
+        "6+1": {
+            "Monthly": {
+                "amount": 1530
+            }
+        }
+    },
+    "Odisha": {
+        "districts": [
+            "Anugul",
+            "Balangir",
+            "Baleshwar",
+            "Bargarh",
+            "Baudh",
+            "Bhadrak",
+            "Cuttack",
+            "Debergarh",
+            "Dhenkanal",
+            "Gajapati",
+            "Ganjam",
+            "Jagatpursingh",
+            "Jajapur",
+            "Jharsuguda",
+            "Kalahandi",
+            "Kandhamal",
+            "Kendrapara",
+            "Kendujhar",
+            "Khordha",
+            "Koraput",
+            "Malkangiri",
+            "Mayurbhanj",
+            "Nabarangapur",
+            "Nayagarh",
+            "Nuapada",
+            "Puri",
+            "Rayagada",
+            "Sambalpur",
+            "State Transport Authority",
+            "Subarnapur",
+            "Sundargarh"
+        ],
+        "4+1": {
+            "Six Days": {
+                "amount": 540
+            }
+        },
+        "6+1": {
+            "Six Days": {
+                "amount": 540
+            }
+        }
+    }
+}

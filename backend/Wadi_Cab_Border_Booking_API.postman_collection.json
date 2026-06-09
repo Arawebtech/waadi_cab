@@ -1,0 +1,1206 @@
+{
+  "info": {
+    "name": "Wadi Cab Border Booking API",
+    "description": "Complete API collection for the Wadi Cab border booking system including states, districts, vehicle types, plans, and bookings management.",
+    "version": "2.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:4001/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "state_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "district_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "vehicle_type_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "plan_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "booking_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "transaction_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🔐 Authentication",
+      "description": "Authentication endpoints for user signup, login, and token management",
+      "item": [
+        {
+          "name": "1. Signup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"phoneNumber\": \"9876543210\",\n  \"userType\": \"driver\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/signup",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "signup"]
+            }
+          }
+        },
+        {
+          "name": "2. Verify Signup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"9876543210\",\n  \"otp\": \"1234\",\n  \"verificationId\": \"verification_id_from_signup\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"userType\": \"driver\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/verify-signup",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "verify-signup"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data.accessToken) {",
+                  "        pm.collectionVariables.set('access_token', response.data.accessToken);",
+                  "        console.log('Access token saved:', response.data.accessToken);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"9876543210\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "4. Verify Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"9876543210\",\n  \"otp\": \"1234\",\n  \"verificationId\": \"verification_id_from_login\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/verify-login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "verify-login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data.accessToken) {",
+                  "        pm.collectionVariables.set('access_token', response.data.accessToken);",
+                  "        console.log('Access token saved:', response.data.accessToken);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🌍 States",
+      "description": "State management endpoints",
+      "item": [
+        {
+          "name": "1. Get Active States",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/states",
+              "host": ["{{base_url}}"],
+              "path": ["states"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data.length > 0) {",
+                  "        pm.collectionVariables.set('state_id', response.data[0]._id);",
+                  "        console.log('State ID saved:', response.data[0]._id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Create State",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Delhi\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/states",
+              "host": ["{{base_url}}"],
+              "path": ["states"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data._id) {",
+                  "        pm.collectionVariables.set('state_id', response.data._id);",
+                  "        console.log('State ID saved:', response.data._id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Toggle State Status",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/states/{{state_id}}/toggle",
+              "host": ["{{base_url}}"],
+              "path": ["states", "{{state_id}}", "toggle"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏛️ Districts",
+      "description": "District management endpoints",
+      "item": [
+        {
+          "name": "1. Get Districts by State",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/districts?state_id={{state_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["districts"],
+              "query": [
+                {
+                  "key": "state_id",
+                  "value": "{{state_id}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data.length > 0) {",
+                  "        pm.collectionVariables.set('district_id', response.data[0]._id);",
+                  "        console.log('District ID saved:', response.data[0]._id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Create District",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Central Delhi\",\n  \"state_id\": \"{{state_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/districts",
+              "host": ["{{base_url}}"],
+              "path": ["districts"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data._id) {",
+                  "        pm.collectionVariables.set('district_id', response.data._id);",
+                  "        console.log('District ID saved:', response.data._id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Toggle District Status",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/districts/{{district_id}}/toggle",
+              "host": ["{{base_url}}"],
+              "path": ["districts", "{{district_id}}", "toggle"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🚗 Vehicle Types",
+      "description": "Vehicle type management endpoints",
+      "item": [
+        {
+          "name": "1. Get Vehicle Types by State",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/vehicle-types?state_id={{state_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["vehicle-types"],
+              "query": [
+                {
+                  "key": "state_id",
+                  "value": "{{state_id}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data.length > 0) {",
+                  "        pm.collectionVariables.set('vehicle_type_id', response.data[0]._id);",
+                  "        console.log('Vehicle Type ID saved:', response.data[0]._id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Create Vehicle Type",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"4+1\",\n  \"state_id\": \"{{state_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/vehicle-types",
+              "host": ["{{base_url}}"],
+              "path": ["vehicle-types"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data._id) {",
+                  "        pm.collectionVariables.set('vehicle_type_id', response.data._id);",
+                  "        console.log('Vehicle Type ID saved:', response.data._id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Toggle Vehicle Type Status",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/vehicle-types/{{vehicle_type_id}}/toggle",
+              "host": ["{{base_url}}"],
+              "path": ["vehicle-types", "{{vehicle_type_id}}", "toggle"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📋 Plans",
+      "description": "Plan management endpoints",
+      "item": [
+        {
+          "name": "1. Get Plans by Vehicle Type",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/plans?vehicle_type_id={{vehicle_type_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["plans"],
+              "query": [
+                {
+                  "key": "vehicle_type_id",
+                  "value": "{{vehicle_type_id}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data.length > 0) {",
+                  "        pm.collectionVariables.set('plan_id', response.data[0]._id);",
+                  "        console.log('Plan ID saved:', response.data[0]._id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Create Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicle_type_id\": \"{{vehicle_type_id}}\",\n  \"plan_type\": \"Daily\",\n  \"amount\": 200\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/plans",
+              "host": ["{{base_url}}"],
+              "path": ["plans"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data._id) {",
+                  "        pm.collectionVariables.set('plan_id', response.data._id);",
+                  "        console.log('Plan ID saved:', response.data._id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Toggle Plan Status",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/plans/{{plan_id}}/toggle",
+              "host": ["{{base_url}}"],
+              "path": ["plans", "{{plan_id}}", "toggle"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📅 Bookings",
+      "description": "User-specific booking management endpoints (requires authentication)",
+      "item": [
+        {
+          "name": "1. Create Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"visiting_state\": \"{{state_id}}\",\n  \"vehicle_number\": \"DL01AB1234\",\n  \"seat_capacity\": \"4+1\",\n  \"whatsapp_number\": \"9876543210\",\n  \"entry_border\": \"DND Flyway\",\n  \"tax_mode\": \"Daily\",\n  \"tax_from_date\": \"2024-12-01\",\n  \"tax_upto_date\": \"2024-12-01\",\n  \"amount\": 200\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings",
+              "host": ["{{base_url}}"],
+              "path": ["bookings"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data._id) {",
+                  "        pm.collectionVariables.set('booking_id', response.data._id);",
+                  "        console.log('Booking ID saved:', response.data._id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Get My Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bookings?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["bookings"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "3. Get Bookings by Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bookings?status=pending",
+              "host": ["{{base_url}}"],
+              "path": ["bookings"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "4. Get Bookings by State",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bookings?state_id={{state_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["bookings"],
+              "query": [
+                {
+                  "key": "state_id",
+                  "value": "{{state_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "5. Get Booking Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bookings/stats",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "stats"]
+            }
+          }
+        },
+        {
+          "name": "6. Get Booking by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bookings/{{booking_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "{{booking_id}}"]
+            }
+          }
+        },
+        {
+          "name": "7. Update Booking Status to Paid",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"paid\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings/{{booking_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "{{booking_id}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "8. Update Booking Status to Cancelled",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"cancelled\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings/{{booking_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "{{booking_id}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "9. Delete Booking",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bookings/{{booking_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "{{booking_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "💳 Payment",
+      "description": "PayU payment gateway integration endpoints",
+      "item": [
+        {
+          "name": "1. Test PayU Configuration",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/payment/test",
+              "host": ["{{base_url}}"],
+              "path": ["payment", "test"]
+            }
+          }
+        },
+        {
+          "name": "2. Initiate Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": \"{{booking_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/payment/initiate",
+              "host": ["{{base_url}}"],
+              "path": ["payment", "initiate"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data.payment && response.data.payment.paymentData) {",
+                  "        pm.collectionVariables.set('transaction_id', response.data.payment.paymentData.txnid);",
+                  "        console.log('Transaction ID saved:', response.data.payment.paymentData.txnid);",
+                  "        console.log('PayU Payment URL:', response.data.payment.paymentUrl);",
+                  "        console.log('Use this data to POST to PayU:', JSON.stringify(response.data.payment.paymentData, null, 2));",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Get Payment Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/payment/status/{{transaction_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["payment", "status", "{{transaction_id}}"]
+            }
+          }
+        },
+        {
+          "name": "4. Simulate PayU Success Callback",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "mihpayid",
+                  "value": "123456789",
+                  "type": "text"
+                },
+                {
+                  "key": "mode",
+                  "value": "CC",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "success",
+                  "type": "text"
+                },
+                {
+                  "key": "unmappedstatus",
+                  "value": "captured",
+                  "type": "text"
+                },
+                {
+                  "key": "key",
+                  "value": "your_payu_key",
+                  "type": "text"
+                },
+                {
+                  "key": "txnid",
+                  "value": "{{transaction_id}}",
+                  "type": "text"
+                },
+                {
+                  "key": "amount",
+                  "value": "100.00",
+                  "type": "text"
+                },
+                {
+                  "key": "productinfo",
+                  "value": "Border Tax Pass - Daily - Test State",
+                  "type": "text"
+                },
+                {
+                  "key": "firstname",
+                  "value": "John",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "john@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "9876543210",
+                  "type": "text"
+                },
+                {
+                  "key": "udf1",
+                  "value": "{{booking_id}}",
+                  "type": "text"
+                },
+                {
+                  "key": "udf2",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "udf3",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "udf4",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "udf5",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "udf6",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "udf7",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "udf8",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "udf9",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "udf10",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "hash",
+                  "value": "calculated_hash_value",
+                  "type": "text",
+                  "description": "This should be calculated using PayU's reverse hash formula"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/payment/success",
+              "host": ["{{base_url}}"],
+              "path": ["payment", "success"]
+            }
+          }
+        },
+        {
+          "name": "5. Simulate PayU Failure Callback",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "mihpayid",
+                  "value": "123456789",
+                  "type": "text"
+                },
+                {
+                  "key": "mode",
+                  "value": "CC",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "failure",
+                  "type": "text"
+                },
+                {
+                  "key": "unmappedstatus",
+                  "value": "failed",
+                  "type": "text"
+                },
+                {
+                  "key": "key",
+                  "value": "your_payu_key",
+                  "type": "text"
+                },
+                {
+                  "key": "txnid",
+                  "value": "{{transaction_id}}",
+                  "type": "text"
+                },
+                {
+                  "key": "amount",
+                  "value": "100.00",
+                  "type": "text"
+                },
+                {
+                  "key": "productinfo",
+                  "value": "Border Tax Pass - Daily - Test State",
+                  "type": "text"
+                },
+                {
+                  "key": "firstname",
+                  "value": "John",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "john@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "9876543210",
+                  "type": "text"
+                },
+                {
+                  "key": "udf1",
+                  "value": "{{booking_id}}",
+                  "type": "text"
+                },
+                {
+                  "key": "udf2",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "udf3",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "udf4",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "udf5",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "udf6",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "udf7",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "udf8",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "udf9",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "udf10",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "error_Message",
+                  "value": "Transaction failed due to insufficient funds",
+                  "type": "text"
+                },
+                {
+                  "key": "hash",
+                  "value": "calculated_hash_value",
+                  "type": "text",
+                  "description": "This should be calculated using PayU's reverse hash formula"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/payment/failure",
+              "host": ["{{base_url}}"],
+              "path": ["payment", "failure"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "👤 Users",
+      "description": "User management endpoints",
+      "item": [
+        {
+          "name": "1. Get User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/profile",
+              "host": ["{{base_url}}"],
+              "path": ["users", "profile"]
+            }
+          }
+        },
+        {
+          "name": "2. Update User Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Smith\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/profile",
+              "host": ["{{base_url}}"],
+              "path": ["users", "profile"]
+            }
+          }
+        },
+        {
+          "name": "3. Add Vehicle",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleNumber\": \"DL01AB1234\",\n  \"vehicleType\": \"private\",\n  \"seatCapacity\": \"4+1\",\n  \"fuelType\": \"petrol\",\n  \"isDefault\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/vehicles",
+              "host": ["{{base_url}}"],
+              "path": ["users", "vehicles"]
+            }
+          }
+        },
+        {
+          "name": "4. Get User Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/dashboard",
+              "host": ["{{base_url}}"],
+              "path": ["users", "dashboard"]
+            }
+          }
+        },
+        {
+          "name": "5. Fetch Enhanced Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/fetch-dashboard",
+              "host": ["{{base_url}}"],
+              "path": ["users", "fetch-dashboard"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+} 
