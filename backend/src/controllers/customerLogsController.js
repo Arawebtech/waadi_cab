@@ -127,64 +127,6 @@ exports.getLogs = async (req, res) => {
 
       
 
-// const buildMeta = (customerObj) => {
-//   const user = customerObj.userId || {};
-
-//   return {
-//     id: user._id,
-//     name: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
-//     phone: customerObj.phoneNumber,
-//     type: user.userType,
-//     platform: user.platform,
-//     appVersion: user.appVersion,
-//     active: user.isActive,
-//     verified: user.isVerified,
-//     created: user.createdAt,
-//     lastLogin: user.lastLogin
-//   };
-// };
-
-// const buildJourneyLog = (customer) => {
-//   const customerObj = customer.toObject();
-
-//   const meta = buildMeta(customerObj);
-
-//   const journey = Object.entries(customerObj.logs || {})
-//     .map(([eventKey, eventData]) => ({
-//       event: eventKey,
-//       time: eventData.createdAt,
-//       ip: eventData.ip,
-//       device: eventData.device,
-//       data: eventData.data || {}
-//     }))
-//     .sort((a, b) => new Date(b.time) - new Date(a.time));
-
-//   let logText = "";
-
-// /* ================= META (ONLY ONCE) ================= */
-//   logText += `
-// ==============================
-// CUSTOMER
-// ${JSON.stringify(meta, null, 2)}
-// ==============================
-// `;
-
-// /* ================= JOURNEY ================= */
-//   journey.forEach((j) => {
-//     logText += `
-// ------------------------------
-// EVENT : ${j.event}
-// TIME  : ${j.time || "N/A"}
-// IP    : ${j.ip || "N/A"}
-// DEVICE: ${j.device || "N/A"}
-
-// DATA  :
-// ${JSON.stringify(j.data, null, 2)}
-// `;
-//   });
-
-//   return logText;
-// };
 
 const buildMeta = (customerObj) => {
   const user = customerObj.userId || {};
@@ -205,7 +147,6 @@ const buildMeta = (customerObj) => {
 
 const buildJourneyLog = (customer) => {
   const customerObj = customer.toObject();
-
   const meta = buildMeta(customerObj);
 
   const journey = Object.entries(customerObj.logs || {})
@@ -214,14 +155,19 @@ const buildJourneyLog = (customer) => {
       time: eventData.createdAt,
       ip: eventData.ip,
       device: eventData.device,
-      data: eventData.data || {}
+
+      url: eventData?.url || "",
+      method: eventData?.method || "",
+      fullUrl: eventData?.fullUrl || "",
+
+      query: eventData.query || {},
+      params: eventData.params || {},
+      data: eventData.data || {},
     }))
-    // 👉 IMPORTANT: OLD → NEW order (flow style)
     .sort((a, b) => new Date(a.time) - new Date(b.time));
 
   let logText = "";
 
-/* ================= CUSTOMER ================= */
   logText += `
 ==============================
 customer:
@@ -229,23 +175,33 @@ ${JSON.stringify(meta, null, 2)}
 ==============================
 `;
 
-/* ================= JOURNEY FLOW ================= */
   logText += `
 journey:
-(1st → last activity)
 ==============================
 `;
 
   journey.forEach((j, index) => {
     logText += `
 step ${index + 1}
-event : ${j.event}
-time  : ${j.time || "N/A"}
-ip    : ${j.ip || "N/A"}
-device: ${j.device || "N/A"}
+event   : ${j.event}
+time    : ${j.time || "N/A"}
 
-data:
+method  : ${j.method || "N/A"}
+url     : ${j.url || "N/A"}
+fullUrl : ${j.fullUrl || "N/A"}
+
+ip      : ${j.ip || "N/A"}
+device  : ${j.device || "N/A"}
+
+query:
+${JSON.stringify(j.query, null, 2)}
+
+params:
+${JSON.stringify(j.params, null, 2)}
+
+body:
 ${JSON.stringify(j.data, null, 2)}
+
 ------------------------------
 `;
   });

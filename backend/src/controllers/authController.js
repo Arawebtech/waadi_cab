@@ -465,13 +465,11 @@ class AuthController {
   userId: userId,
   phoneNumber: user?.phoneNumber,
   type: "lastLogout",
-  req: {
-    ...req,
-    body: {
+  req, 
+  extraData: {
       action: "logout",
       logoutTime: new Date(),
     },
-  },
 });
 
     res.status(200).json({

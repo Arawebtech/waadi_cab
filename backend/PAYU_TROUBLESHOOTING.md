@@ -183,11 +183,11 @@ DEBUG=payu:*
 
 ```bash
 # Check server health
-curl https://api.waadi.in/health
+curl http://localhost:4001/health
 
 # Test PayU config
 curl -H "Authorization: Bearer YOUR_TOKEN" \
-  https://api.waadi.in/api/v1/payment/test
+  http://localhost:4001/api/v1/payment/test
 
 # View recent logs
 tail -f logs/app.log | grep -i payu
