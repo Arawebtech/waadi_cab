@@ -4,7 +4,7 @@ echo ""
 
 # Test success URL
 echo "Testing SUCCESS URL..."
-curl -X POST http://localhost:4001/api/v1/payment/success \
+curl -X POST https://api.waadi.in/api/v1/payment/success \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "status=success&txnid=TEST123&amount=100&udf1=test_booking_id&test=true&mihpayid=12345" \
   -w "\nHTTP Status: %{http_code}\n" \
@@ -12,7 +12,7 @@ curl -X POST http://localhost:4001/api/v1/payment/success \
 
 echo ""
 echo "Testing FAILURE URL..."
-curl -X POST http://localhost:4001/api/v1/payment/failure \
+curl -X POST https://api.waadi.in/api/v1/payment/failure \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "status=failure&txnid=TEST123&amount=100&udf1=test_booking_id&test=true&error_Message=Test+failure" \
   -w "\nHTTP Status: %{http_code}\n" \

@@ -990,7 +990,7 @@ class PaymentController {
       
       console.log('\n📥 FOR POSTMAN TESTING - COPY THIS EXACT DATA:');
       console.log('Content-Type: application/x-www-form-urlencoded');
-      console.log('POST URL: http://localhost:4001/api/v1/payment/success');
+      console.log('POST URL: https://api.waadi.in/api/v1/payment/success');
       console.log('Form Data:');
       Object.keys(payuResponse).forEach(key => {
         if (payuResponse[key] !== undefined && payuResponse[key] !== null) {
@@ -1003,7 +1003,7 @@ class PaymentController {
         .filter(key => payuResponse[key] !== undefined && payuResponse[key] !== null)
         .map(key => `${key}=${encodeURIComponent(payuResponse[key])}`)
         .join('&');
-      console.log(`curl -X POST http://localhost:4001/api/v1/payment/success \\`);
+      console.log(`curl -X POST https://api.waadi.in/api/v1/payment/success \\`);
       console.log(`  -H "Content-Type: application/x-www-form-urlencoded" \\`);
       console.log(`  -d "${curlData}"`);
       
@@ -1295,7 +1295,7 @@ await saveCustomerLog({
       
       console.log('\n📥 FOR POSTMAN TESTING - COPY THIS EXACT FAILURE DATA:');
       console.log('Content-Type: application/x-www-form-urlencoded');
-      console.log('POST URL: http://localhost:4001/api/v1/payment/failure');
+      console.log('POST URL: https://api.waadi.in/api/v1/payment/failure');
       console.log('Form Data:');
       Object.keys(payuResponse).forEach(key => {
         if (payuResponse[key] !== undefined && payuResponse[key] !== null) {
@@ -1308,7 +1308,7 @@ await saveCustomerLog({
         .filter(key => payuResponse[key] !== undefined && payuResponse[key] !== null)
         .map(key => `${key}=${encodeURIComponent(payuResponse[key])}`)
         .join('&');
-      console.log(`curl -X POST http://localhost:4001/api/v1/payment/failure \\`);
+      console.log(`curl -X POST https://api.waadi.in/api/v1/payment/failure \\`);
       console.log(`  -H "Content-Type: application/x-www-form-urlencoded" \\`);
       console.log(`  -d "${curlData}"`);
       

@@ -3,7 +3,7 @@
 ## 🎯 Problem Statement
 Users were unable to create vehicle type "7+1" because they received a **409 Conflict** error:
 ```
-POST http://localhost:4001/api/v1/vehicle-types 409 (Conflict)
+POST https://api.waadi.in/api/v1/vehicle-types 409 (Conflict)
 API Error: Vehicle type with this name already exists in the state
 ```
 
@@ -75,7 +75,7 @@ Temporarily disabled maintenance mode to test the fix:
 
 ### **Before Fix**
 ```bash
-curl -X POST "http://localhost:4001/api/v1/vehicle-types" \
+curl -X POST "https://api.waadi.in/api/v1/vehicle-types" \
   -H "Content-Type: application/json" \
   -d '{"name": "7+1", "state_id": "6891f4ae463073b51ec50c47"}'
 
@@ -88,7 +88,7 @@ curl -X POST "http://localhost:4001/api/v1/vehicle-types" \
 
 ### **After Fix**
 ```bash
-curl -X POST "http://localhost:4001/api/v1/vehicle-types" \
+curl -X POST "https://api.waadi.in/api/v1/vehicle-types" \
   -H "Content-Type: application/json" \
   -d '{"name": "7+1", "state_id": "6891f4ae463073b51ec50c47"}'
 
@@ -113,7 +113,7 @@ curl -X POST "http://localhost:4001/api/v1/vehicle-types" \
 ### **Verification**
 ```bash
 # Check vehicle types list
-curl -s "http://localhost:4001/api/v1/vehicle-types?state_id=6891f4ae463073b51ec50c47"
+curl -s "https://api.waadi.in/api/v1/vehicle-types?state_id=6891f4ae463073b51ec50c47"
 
 # Result: "7+1" now appears in the list
 {

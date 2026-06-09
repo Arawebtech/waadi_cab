@@ -6,8 +6,8 @@ class PayUService {
     this.salt = process.env.PAYU_MERCHANT_SALT || process.env.PAYU_SALT;
     this.environment ='production';
     this.verifyUrl = process.env.PAYU_VERIFY_URL || 'https://info.payu.in/merchant/postservice.php?form=2';
-    this.successUrl = process.env.PAYU_SUCCESS_URL || 'http://localhost:4001/api/v1/payment/success';
-    this.failureUrl = process.env.PAYU_FAILURE_URL || 'http://localhost:4001/api/v1/payment/failure';
+    this.successUrl = process.env.PAYU_SUCCESS_URL || 'https://api.waadi.in/api/v1/payment/success';
+    this.failureUrl = process.env.PAYU_FAILURE_URL || 'https://api.waadi.in/api/v1/payment/failure';
     this.paymentUrl = 'https://secure.payu.in/_payment' ;
     
     // Log configuration for debugging

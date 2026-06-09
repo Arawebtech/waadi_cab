@@ -90,8 +90,8 @@ A backend API for the Wadi Cab application, providing authentication and user ma
    # PayU Payment Gateway Configuration
    PAYU_KEY=your_payu_key_here
    PAYU_SALT=your_payu_salt_here
-   PAYU_SUCCESS_URL=http://localhost:4001/api/v1/payment/success
-   PAYU_FAILURE_URL=http://localhost:4001/api/v1/payment/failure
+   PAYU_SUCCESS_URL=https://api.waadi.in/api/v1/payment/success
+   PAYU_FAILURE_URL=https://api.waadi.in/api/v1/payment/failure
    FRONTEND_URL=http://localhost
    ```
 
@@ -113,13 +113,13 @@ A backend API for the Wadi Cab application, providing authentication and user ma
    npm start
    ```
 
-The server will start on `http://localhost:4001`
+The server will start on `https://api.waadi.in`
 
 ## 📚 API Documentation
 
 ### Base URL
 ```
-http://localhost:4001/api/v1
+https://api.waadi.in/api/v1
 ```
 
 ### Authentication
