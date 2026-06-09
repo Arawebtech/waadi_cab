@@ -74,6 +74,8 @@ const fetchLogs = async () => {
     fetchLogs();
   }, []);
 
+  // added by rabil 
+
   const downloadSingle = (phone: string) => {
 
     // alert(process.env.NEXT_PUBLIC_API_URL)
