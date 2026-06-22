@@ -18,8 +18,10 @@ import AppStatus from './pages/AppStatus';
 import InsuranceInquiries from './pages/InsuranceInquiries';
 import CabBookings from './pages/CabBookings';
 import AppVersions from './pages/AppVersions';
-import './App.css';
+// import './App.css';
+// import './index';
 import CustomerLogsPage from './components/CustomerLogsPage';
+import PaymentGatewaySettings from './components/PaymentGatewaySettings';
 
 function App() {
   return (
@@ -41,6 +43,7 @@ function App() {
               <Route path="cab-bookings" element={<CabBookings />} />
               <Route path="notifications" element={<Notifications />} />
               <Route path="customer-logs" element={<CustomerLogsPage />} />
+              <Route path="payment-change" element={<PaymentGatewaySettings />} />
               <Route path="app-status" element={<AppStatus />} />
               <Route path="app-versions" element={<AppVersions />} />
               <Route path="analytics" element={<Analytics />} />

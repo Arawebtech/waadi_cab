@@ -42,7 +42,7 @@ class WhatsAppService {
         console.log('📱 QR Code received');
         this.qrCode = qr;
         // Display QR code in terminal
-        qrcode.generate(qr, { small: true });
+        // qrcode.generate(qr, { small: true });
       });
 
       // Ready event

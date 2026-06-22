@@ -16,7 +16,7 @@ import {
   Globe
 } from 'lucide-react';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4001/api/v1';
+const API_URL = process.env.REACT_APP_API_URL || 'https://api.waadi.in/api/v1';
 
 interface AppVersion {
   _id: string;

@@ -219,39 +219,43 @@
 
 // module.exports = saveCustomerLog;
 
-
-
 const CustomerLog = require("../models/CustomerLog");
 
 /**
- * 🔥 Deep clean function (removes null/undefined recursively)
+ * 🔥 Deep clean: removes null, undefined, and empty objects
  */
-const removeNullUndefined = (obj) => {
+const removeEmpty = (obj) => {
   if (Array.isArray(obj)) {
-    return obj
-      .map(removeNullUndefined)
-      .filter((v) => v !== undefined && v !== null);
+    const arr = obj
+      .map(removeEmpty)
+      .filter(v => v !== undefined && v !== null);
+
+    return arr.length ? arr : undefined;
   }
 
   if (obj && typeof obj === "object") {
     const newObj = {};
 
     Object.keys(obj).forEach((key) => {
-      const value = removeNullUndefined(obj[key]);
+      const value = removeEmpty(obj[key]);
 
-      if (value !== undefined && value !== null) {
+      if (
+        value !== undefined &&
+        value !== null &&
+        !(typeof value === "object" && Object.keys(value).length === 0)
+      ) {
         newObj[key] = value;
       }
     });
 
-    return newObj;
+    return Object.keys(newObj).length ? newObj : undefined;
   }
 
   return obj;
 };
 
 /**
- * 📌 Save Customer Log (SAFE VERSION)
+ * 📌 Save Customer Log (FINAL CLEAN VERSION)
  */
 const saveCustomerLog = async ({
   userId = null,
@@ -261,43 +265,41 @@ const saveCustomerLog = async ({
   extraData = null,
 }) => {
   try {
+    if (!userId && !phoneNumber) return;
+
     const query = {};
+    if (userId) query.userId = userId;
+    if (phoneNumber) query.phoneNumber = phoneNumber;
 
-    if (userId) {
-      query.userId = userId;
-    } else if (phoneNumber) {
-      query.phoneNumber = phoneNumber;
-    } else {
-      return;
-    }
-
-    // 🔥 SAFE req extraction (NO CRASH EVER)
+    // 🔥 Safe URL build
     const fullUrl =
       req?.protocol && req?.get
         ? `${req.protocol}://${req.get("host")}${req.originalUrl}`
         : req?.originalUrl || req?.url || "unknown";
 
     const rawLogData = {
-      data: extraData || req?.body,
+      data: extraData || req?.body || undefined,
 
-      method: req?.method,
+      method: req?.method || undefined,
       fullUrl,
 
       ip:
         req?.headers?.["x-forwarded-for"]?.split(",")[0]?.trim() ||
         req?.socket?.remoteAddress ||
-        req?.ip,
+        req?.ip ||
+        undefined,
 
-      device: req?.headers?.["user-agent"],
+      device: req?.headers?.["user-agent"] || undefined,
 
-      query: req?.query,
-      params: req?.params,
+      query: Object.keys(req?.query || {}).length ? req.query : undefined,
+      params: Object.keys(req?.params || {}).length ? req.params : undefined,
 
+      // ✅ FIXED: proper string date (no "Object" issue)
       createdAt: new Date(),
     };
 
-    // 🔥 CLEAN DATA BEFORE SAVE
-    const logData = removeNullUndefined(rawLogData);
+    // 🔥 Clean before save
+    const logData = removeEmpty(rawLogData);
 
     await CustomerLog.findOneAndUpdate(
       query,

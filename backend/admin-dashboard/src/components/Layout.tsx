@@ -116,6 +116,12 @@ const sidebarItems: SidebarItem[] = [
     path: '/customer-logs',
     icon: Settings,
     description: 'CustomerLogs'
+  },
+     {
+    name: 'Payment Change',
+    path: '/payment-change',
+    icon: Settings,
+    description: 'Payment Change'
   }
 ];
 

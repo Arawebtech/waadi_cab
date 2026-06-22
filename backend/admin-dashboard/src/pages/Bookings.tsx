@@ -1753,7 +1753,7 @@ const Bookings: React.FC = () => {
                 <div>
                   <h4 className="text-sm font-medium text-gray-500 mb-2">Phone Number</h4>
                   <div className="flex items-center space-x-2">
-                    <p className="text-gray-900">{selectedBooking.whatsapp_number}</p>
+                    <p className="text-gray-900">{selectedBooking.user?.phoneNumber}</p>
                     <button
                       onClick={() => openWhatsAppChat(selectedBooking.whatsapp_number)}
                       className="text-green-600 hover:text-green-900 flex items-center"

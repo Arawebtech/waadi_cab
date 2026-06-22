@@ -37,9 +37,9 @@ A comprehensive admin dashboard for managing the Wadi Cab border booking platfor
    ```
 
 2. **Environment Configuration**
-   Create a `.env` file in the admin-dashboard directory (optional, defaults to http://localhost:4001/api/v1):
+   Create a `.env` file in the admin-dashboard directory (optional, defaults to https://api.waadi.in/api/v1):
    ```env
-   REACT_APP_API_URL=http://localhost:4001/api/v1
+   REACT_APP_API_URL=https://api.waadi.in/api/v1
    ```
 
 3. **Start Development Server**
@@ -57,7 +57,7 @@ npm run build
 
 ## API Integration
 
-The dashboard communicates with the backend API at `http://localhost:4001/api/v1` by default. You can override this by setting the `REACT_APP_API_URL` environment variable. Make sure your backend server is running before starting the dashboard.
+The dashboard communicates with the backend API at `https://api.waadi.in/api/v1` by default. You can override this by setting the `REACT_APP_API_URL` environment variable. Make sure your backend server is running before starting the dashboard.
 
 ### API Endpoints Used
 - `GET /admin/dashboard` - Dashboard statistics
