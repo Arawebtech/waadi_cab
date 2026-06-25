@@ -595,6 +595,7 @@ const State = require('../models/State');
 const path = require('path');
 const fs = require('fs');
 const saveCustomerLog = require('../utils/saveCustomerLog');
+const { isAppPlatformRequest } = require('../utils/platformRequest');
 const User = require('../models/User');
 const gatewayResolver = require('../config/gatewayResolver');
 
@@ -668,9 +669,9 @@ class BookingController {
           console.error('❌ Gateway credential validation failed:', errors);
 
         } else {
-          // ── Step 2: Prepare payment data via the resolved service ──
+          const platform = isAppPlatformRequest(req) ? 'app' : 'web';
           const paymentPreparation = await Promise.resolve(
-            gatewayService.preparePaymentData(savedBooking, savedBooking.user)
+            gatewayService.preparePaymentData(savedBooking, savedBooking.user, { platform })
           );
 
           if (paymentPreparation.success) {
@@ -678,14 +679,14 @@ class BookingController {
             if (gatewayName === 'payu') {
               savedBooking.payment_details.transaction_id = paymentPreparation.paymentData.txnid;
             } else if (gatewayName === 'cashfree') {
-              savedBooking.payment_details.transaction_id = paymentPreparation.orderId;
+              savedBooking.payment_details.transaction_id = paymentPreparation.paymentData.txnid;
             }
             savedBooking.payment_details.payment_method = gatewayName;
             await savedBooking.save();
 
             // Log transaction initiation
             gatewayService.logTransaction('AUTO_INITIATE', {
-              txnid: paymentPreparation.paymentData?.txnid || paymentPreparation.orderId,
+              txnid: paymentPreparation.paymentData?.txnid,
               amount: savedBooking.amount,
               bookingId: savedBooking.bookingId,
             });
@@ -701,11 +702,9 @@ class BookingController {
             } else if (gatewayName === 'cashfree') {
               paymentData = {
                 gateway: 'cashfree',
-                orderId: paymentPreparation.orderId,
-                paymentSessionId: paymentPreparation.paymentSessionId,
-                environment: paymentPreparation.environment,
-                expiresAt: paymentPreparation.expiresAt,
-                message: 'Cashfree payment session created',
+                paymentUrl: paymentPreparation.paymentUrl,
+                paymentData: paymentPreparation.paymentData,
+                message: 'Cashfree payment initiated',
               };
             }
 

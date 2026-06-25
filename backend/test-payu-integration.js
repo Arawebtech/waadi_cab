@@ -8,7 +8,7 @@
 const axios = require('axios');
 
 // Configuration
-const BASE_URL = 'https://api.waadi.in/api/v1';
+const BASE_URL = 'https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1';
 const AUTH_TOKEN = 'YOUR_AUTH_TOKEN_HERE'; // Replace with actual token
 
 // Test data

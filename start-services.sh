@@ -29,7 +29,7 @@ fi
 # Wait for backend to be ready
 echo "⏳ Waiting for backend to be ready..."
 for i in {1..30}; do
-    if curl -s -f https://api.waadi.in/health > /dev/null 2>&1; then
+    if curl -s -f  https://mdk7v2f6-4001.inc1.devtunnels.ms/health > /dev/null 2>&1; then
         echo "✅ Backend is ready!"
         break
     fi
@@ -65,7 +65,7 @@ done
 echo ""
 echo "🎉 All services started successfully!"
 echo "====================================="
-echo "Backend API: https://api.waadi.in"
+echo "Backend API:  https://mdk7v2f6-4001.inc1.devtunnels.ms/"
 echo "Admin Dashboard: http://localhost:3000"
 echo ""
 echo "To check service status, run: ./check-services.sh"

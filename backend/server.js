@@ -41,8 +41,8 @@ const server = createServer(app);
 const io = new Server(server, {
     cors: {
       origin: process.env.NODE_ENV === 'production' 
-        ? ['https://localhost','http://localhost', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost", "https://api.waadi.in/", "https://api.waadi.in/", "http://192.168.1.36:3000", "https://book.waadi.in", 'http://localhost:3000',  "http://localhost:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3002"]
-        : ['https://localhost','http://localhost', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost", "https://api.waadi.in/", "https://api.waadi.in/", "http://192.168.1.36:3000", "https://book.waadi.in",  'http://localhost:3000',  "http://localhost:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3002"],
+        ? ['https://localhost','http://localhost:3000','https://mdk7v2f6-3000.inc1.devtunnels.ms','http://localhost:3000', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3000", "https://mdk7v2f6-4001.inc1.devtunnels.ms/", " https://mdk7v2f6-4001.inc1.devtunnels.ms/", "http://192.168.1.36:3000", "https://book.waadi.in", 'http://localhost:3000',  "http://localhost:3000:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3002"]
+        : ['https://localhost','http://localhost:3000','https://mdk7v2f6-3000.inc1.devtunnels.ms','http://localhost:3000', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3000", "https://mdk7v2f6-4001.inc1.devtunnels.ms/", " https://mdk7v2f6-4001.inc1.devtunnels.ms/", "http://192.168.1.36:3000", "https://book.waadi.in",  'http://localhost:3000',  "http://localhost:3000:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3002"],
       credentials: true
     }
 });
@@ -65,6 +65,7 @@ const helmetMiddleware = helmet({
 // Skip helmet for the relay path to avoid CSP conflicts; controller sets route-specific CSP
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/v1/payment/relay')) return next();
+  if (req.path.startsWith('/api/v1/payment/cashfree/relay')) return next();
   return helmetMiddleware(req, res, next);
 });
 app.use(compression());
@@ -72,8 +73,8 @@ app.use(compression());
 // CORS configuration
   app.use(cors({
     origin: process.env.NODE_ENV === 'production' 
-      ?['https://localhost','http://localhost', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost", "https://api.waadi.in/", "https://api.waadi.in/", "http://192.168.1.36:3000", "https://book.waadi.in", 'http://localhost:3000', "http://localhost:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3001","http://127.0.0.1:3002"]
-      : ['https://localhost','http://localhost', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost", "https://api.waadi.in/", "https://api.waadi.in/", "http://192.168.1.36:3000", "https://book.waadi.in", 'http://localhost:3000',  "http://localhost:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3001", "http://127.0.0.1:3002"],
+      ?['https://localhost','http://localhost:3000','https://mdk7v2f6-3000.inc1.devtunnels.ms', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3000", " https://mdk7v2f6-4001.inc1.devtunnels.ms/", " https://mdk7v2f6-4001.inc1.devtunnels.ms/", "http://192.168.1.36:3000", "https://book.waadi.in", 'http://localhost:3000', "http://localhost:3000:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3001","http://127.0.0.1:3002"]
+      : ['https://localhost','https://mdk7v2f6-3000.inc1.devtunnels.ms','http://localhost:3000', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3000", " https://mdk7v2f6-4001.inc1.devtunnels.ms/", " https://mdk7v2f6-4001.inc1.devtunnels.ms/", "http://192.168.1.36:3000", "https://book.waadi.in", 'http://localhost:3000',  "http://localhost:3000:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3001", "http://127.0.0.1:3002"],
     credentials: true
   }));
 

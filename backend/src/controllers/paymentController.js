@@ -990,7 +990,7 @@
       
 //       console.log('\n📥 FOR POSTMAN TESTING - COPY THIS EXACT DATA:');
 //       console.log('Content-Type: application/x-www-form-urlencoded');
-//       console.log('POST URL: https://api.waadi.in/api/v1/payment/success');
+//       console.log('POST URL:  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/success');
 //       console.log('Form Data:');
 //       Object.keys(payuResponse).forEach(key => {
 //         if (payuResponse[key] !== undefined && payuResponse[key] !== null) {
@@ -1003,7 +1003,7 @@
 //         .filter(key => payuResponse[key] !== undefined && payuResponse[key] !== null)
 //         .map(key => `${key}=${encodeURIComponent(payuResponse[key])}`)
 //         .join('&');
-//       console.log(`curl -X POST https://api.waadi.in/api/v1/payment/success \\`);
+//       console.log(`curl -X POST  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/success \\`);
 //       console.log(`  -H "Content-Type: application/x-www-form-urlencoded" \\`);
 //       console.log(`  -d "${curlData}"`);
       
@@ -1293,7 +1293,7 @@
       
 //       console.log('\n📥 FOR POSTMAN TESTING - COPY THIS EXACT FAILURE DATA:');
 //       console.log('Content-Type: application/x-www-form-urlencoded');
-//       console.log('POST URL: https://api.waadi.in/api/v1/payment/failure');
+//       console.log('POST URL:  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/failure');
 //       console.log('Form Data:');
 //       Object.keys(payuResponse).forEach(key => {
 //         if (payuResponse[key] !== undefined && payuResponse[key] !== null) {
@@ -1306,7 +1306,7 @@
 //         .filter(key => payuResponse[key] !== undefined && payuResponse[key] !== null)
 //         .map(key => `${key}=${encodeURIComponent(payuResponse[key])}`)
 //         .join('&');
-//       console.log(`curl -X POST https://api.waadi.in/api/v1/payment/failure \\`);
+//       console.log(`curl -X POST  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/failure \\`);
 //       console.log(`  -H "Content-Type: application/x-www-form-urlencoded" \\`);
 //       console.log(`  -d "${curlData}"`);
       
@@ -1647,7 +1647,8 @@ const payuService = require('../services/payuService');       // kept for PayU-s
 const cashfreeService = require('../services/cashfreeService'); // kept for Cashfree-specific helpers
 const gatewayResolver = require('../config/gatewayResolver');
 const gatewayCredentials = require('../utils/gatewayCredentials');
-const PaymentGatewayConfig = require('../models/PaymentGatewayConfig');
+const { isAppPlatformRequest } = require('../utils/platformRequest');
+const PaymentGatewayConfig = require('../models/PaymentGatewayconfig');
 const whatsappService = require('../services/whatsappService');
 const crypto = require('crypto');
 const axios = require('axios');
@@ -2407,8 +2408,9 @@ class PaymentController {
       }
 
       // ── Prepare payment data via the resolved service ──
+      const platform = isAppPlatformRequest(req) ? 'app' : 'web';
       const paymentPreparation = await Promise.resolve(
-        gatewayService.preparePaymentData(booking, booking.user)
+        gatewayService.preparePaymentData(booking, booking.user, { platform })
       );
 
       if (!paymentPreparation.success) {
@@ -2423,14 +2425,14 @@ class PaymentController {
       if (gatewayName === 'payu') {
         booking.payment_details.transaction_id = paymentPreparation.paymentData.txnid;
       } else if (gatewayName === 'cashfree') {
-        booking.payment_details.transaction_id = paymentPreparation.orderId;
+        booking.payment_details.transaction_id = paymentPreparation.paymentData.txnid;
       }
       booking.payment_details.payment_method = gatewayName;
       await booking.save();
 
       // Log transaction initiation
       gatewayService.logTransaction('INITIATE', {
-        txnid: paymentPreparation.paymentData?.txnid || paymentPreparation.orderId,
+        txnid: paymentPreparation.paymentData?.txnid,
         amount: booking.amount,
         bookingId: booking.bookingId
       });
@@ -2446,7 +2448,7 @@ class PaymentController {
             gateway: gatewayName,
             bookingId: booking?._id,
             bookingNumber: booking?.bookingId,
-            txnid: paymentPreparation.paymentData?.txnid || paymentPreparation.orderId,
+            txnid: paymentPreparation.paymentData?.txnid,
             amount: booking?.amount,
             vehicleNumber: booking?.vehicle_number,
             visitingState: booking?.visiting_state?.name,
@@ -2471,13 +2473,11 @@ class PaymentController {
       } else {
         return res.status(200).json({
           success: true,
-          message: 'Cashfree payment session created',
+          message: 'Cashfree payment initiated',
           data: {
             gateway: 'cashfree',
-            orderId: paymentPreparation.orderId,
-            paymentSessionId: paymentPreparation.paymentSessionId,
-            environment: paymentPreparation.environment,
-            expiresAt: paymentPreparation.expiresAt,
+            paymentUrl: paymentPreparation.paymentUrl,
+            paymentData: paymentPreparation.paymentData,
             booking: { id: booking._id, bookingId: booking.bookingId, amount: booking.amount, status: booking.status }
           }
         });
@@ -2654,7 +2654,7 @@ class PaymentController {
       
       console.log('\n📥 FOR POSTMAN TESTING - COPY THIS EXACT DATA:');
       console.log('Content-Type: application/x-www-form-urlencoded');
-      console.log('POST URL: https://api.waadi.in/api/v1/payment/success');
+      console.log('POST URL:  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/success');
       console.log('Form Data:');
       Object.keys(payuResponse).forEach(key => {
         if (payuResponse[key] !== undefined && payuResponse[key] !== null) {
@@ -2667,7 +2667,7 @@ class PaymentController {
         .filter(key => payuResponse[key] !== undefined && payuResponse[key] !== null)
         .map(key => `${key}=${encodeURIComponent(payuResponse[key])}`)
         .join('&');
-      console.log(`curl -X POST https://api.waadi.in/api/v1/payment/success \\`);
+      console.log(`curl -X POST  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/success \\`);
       console.log(`  -H "Content-Type: application/x-www-form-urlencoded" \\`);
       console.log(`  -d "${curlData}"`);
       
@@ -2957,7 +2957,7 @@ await saveCustomerLog({
       
       console.log('\n📥 FOR POSTMAN TESTING - COPY THIS EXACT FAILURE DATA:');
       console.log('Content-Type: application/x-www-form-urlencoded');
-      console.log('POST URL: https://api.waadi.in/api/v1/payment/failure');
+      console.log('POST URL:  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/failure');
       console.log('Form Data:');
       Object.keys(payuResponse).forEach(key => {
         if (payuResponse[key] !== undefined && payuResponse[key] !== null) {
@@ -2970,7 +2970,7 @@ await saveCustomerLog({
         .filter(key => payuResponse[key] !== undefined && payuResponse[key] !== null)
         .map(key => `${key}=${encodeURIComponent(payuResponse[key])}`)
         .join('&');
-      console.log(`curl -X POST https://api.waadi.in/api/v1/payment/failure \\`);
+      console.log(`curl -X POST  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/failure \\`);
       console.log(`  -H "Content-Type: application/x-www-form-urlencoded" \\`);
       console.log(`  -d "${curlData}"`);
       

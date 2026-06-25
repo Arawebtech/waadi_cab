@@ -8,7 +8,7 @@
   "variable": [
     {
       "key": "base_url",
-      "value": "https://api.waadi.in/api/v1",
+      "value": " https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1",
       "type": "string"
     },
     {

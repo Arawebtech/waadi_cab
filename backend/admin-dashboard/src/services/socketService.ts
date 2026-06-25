@@ -1,6 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || process.env.REACT_APP_API_URL?.replace('/api/v1', '') || 'https://api.waadi.in/';
+const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || process.env.REACT_APP_API_URL?.replace('/api/v1', '') || 'https://mdk7v2f6-4001.inc1.devtunnels.ms/';
 
 class SocketService {
   private socket: Socket | null = null;

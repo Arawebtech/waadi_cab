@@ -3,7 +3,7 @@ import axios, { AxiosInstance } from 'axios';
 
 // ─── API Setup ────────────────────────────────────────────────────────────────
 
-const API_BASE = process.env.REACT_APP_API_URL ?? 'https://api.waadi.in/api/v1';
+const API_BASE = process.env.REACT_APP_API_URL ?? 'https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1';
 
 const api: AxiosInstance = axios.create({ baseURL: API_BASE, withCredentials: true });
 
@@ -1344,7 +1344,7 @@ const styles: StyleMap = {
 
 // // ─── API Setup ────────────────────────────────────────────────────────────────
 
-// const API_BASE = process.env.REACT_APP_API_URL ?? 'https://api.waadi.in/api/v1';
+// const API_BASE = process.env.REACT_APP_API_URL ?? 'https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1';
 
 // const api: AxiosInstance = axios.create({ baseURL: API_BASE, withCredentials: true });
 
