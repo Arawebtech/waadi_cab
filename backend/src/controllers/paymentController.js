@@ -990,7 +990,7 @@
       
 //       console.log('\n📥 FOR POSTMAN TESTING - COPY THIS EXACT DATA:');
 //       console.log('Content-Type: application/x-www-form-urlencoded');
-//       console.log('POST URL:  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/success');
+//       console.log('POST URL:  https://api.waadi.in/api/v1/payment/success');
 //       console.log('Form Data:');
 //       Object.keys(payuResponse).forEach(key => {
 //         if (payuResponse[key] !== undefined && payuResponse[key] !== null) {
@@ -1003,7 +1003,7 @@
 //         .filter(key => payuResponse[key] !== undefined && payuResponse[key] !== null)
 //         .map(key => `${key}=${encodeURIComponent(payuResponse[key])}`)
 //         .join('&');
-//       console.log(`curl -X POST  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/success \\`);
+//       console.log(`curl -X POST  https://api.waadi.in/api/v1/payment/success \\`);
 //       console.log(`  -H "Content-Type: application/x-www-form-urlencoded" \\`);
 //       console.log(`  -d "${curlData}"`);
       
@@ -1293,7 +1293,7 @@
       
 //       console.log('\n📥 FOR POSTMAN TESTING - COPY THIS EXACT FAILURE DATA:');
 //       console.log('Content-Type: application/x-www-form-urlencoded');
-//       console.log('POST URL:  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/failure');
+//       console.log('POST URL:  https://api.waadi.in/api/v1/payment/failure');
 //       console.log('Form Data:');
 //       Object.keys(payuResponse).forEach(key => {
 //         if (payuResponse[key] !== undefined && payuResponse[key] !== null) {
@@ -1306,7 +1306,7 @@
 //         .filter(key => payuResponse[key] !== undefined && payuResponse[key] !== null)
 //         .map(key => `${key}=${encodeURIComponent(payuResponse[key])}`)
 //         .join('&');
-//       console.log(`curl -X POST  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/failure \\`);
+//       console.log(`curl -X POST  https://api.waadi.in/api/v1/payment/failure \\`);
 //       console.log(`  -H "Content-Type: application/x-www-form-urlencoded" \\`);
 //       console.log(`  -d "${curlData}"`);
       
@@ -1653,6 +1653,7 @@ const whatsappService = require('../services/whatsappService');
 const crypto = require('crypto');
 const axios = require('axios');
 const saveCustomerLog = require('../utils/saveCustomerLog');
+const lifecycle = require('../utils/bookingLifecycleLogger');
 
 class PaymentController {
   // GET/POST /payment/relay - Render an auto-submitting PayU form (helps native apps open via GET)
@@ -1720,6 +1721,14 @@ class PaymentController {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
+
+      lifecycle.logPayURedirect({
+        txnid: source.txnid,
+        paymentUrl: payuUrl,
+        platform: source.platform || req.headers['x-platform'],
+        req,
+      });
+
       res.status(200).send(
         `<!doctype html>
 <html>
@@ -1985,6 +1994,11 @@ class PaymentController {
       // Check if payment already exists
       const existingPayment = await Payment.findOne({ txn_id: txnId });
       if (existingPayment) {
+        lifecycle.logDuplicatePayment({
+          txnid: txnId,
+          bookingId: existingPayment.booking?.toString(),
+          req,
+        });
         // Handle duplicate payment attempt
         const existingBooking = await Booking.findById(existingPayment.booking)
           .populate('visiting_state', 'name');
@@ -2050,6 +2064,12 @@ class PaymentController {
       }
 
       console.log(`✅ Payment verification result: ${paymentVerified ? 'SUCCESS' : 'FAILED'}`);
+      lifecycle.logPaymentVerified({
+        booking: null,
+        txnid: txnId,
+        verified: paymentVerified,
+        req,
+      });
       if (verificationError) {
         console.log(`⚠️ Verification error details: ${verificationError}`);
       }
@@ -2437,6 +2457,14 @@ class PaymentController {
         bookingId: booking.bookingId
       });
 
+      lifecycle.logPaymentInitiated({
+        booking,
+        txnid: paymentPreparation.paymentData?.txnid,
+        gateway: gatewayName,
+        req,
+        payload: paymentPreparation,
+      });
+
       try {
         const user = await User.findById(userId);
         await saveCustomerLog({
@@ -2654,7 +2682,7 @@ class PaymentController {
       
       console.log('\n📥 FOR POSTMAN TESTING - COPY THIS EXACT DATA:');
       console.log('Content-Type: application/x-www-form-urlencoded');
-      console.log('POST URL:  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/success');
+      console.log('POST URL:  https://api.waadi.in/api/v1/payment/success');
       console.log('Form Data:');
       Object.keys(payuResponse).forEach(key => {
         if (payuResponse[key] !== undefined && payuResponse[key] !== null) {
@@ -2667,7 +2695,7 @@ class PaymentController {
         .filter(key => payuResponse[key] !== undefined && payuResponse[key] !== null)
         .map(key => `${key}=${encodeURIComponent(payuResponse[key])}`)
         .join('&');
-      console.log(`curl -X POST  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/success \\`);
+      console.log(`curl -X POST  https://api.waadi.in/api/v1/payment/success \\`);
       console.log(`  -H "Content-Type: application/x-www-form-urlencoded" \\`);
       console.log(`  -d "${curlData}"`);
       
@@ -2675,6 +2703,7 @@ class PaymentController {
 
       // Log the transaction (always PayU at this route – Cashfree uses its own webhook)
       payuService.logTransaction('SUCCESS_CALLBACK', payuResponse);
+      lifecycle.logPayUCallbackReceived('success', payuResponse, req);
 
       // Check if this is a test request
       const isTestRequest = payuResponse.txnid === 'TEST123' || payuResponse.test === 'true';
@@ -2776,6 +2805,40 @@ class PaymentController {
       }
 
       await booking.save();
+
+      if (paymentStatus === 'paid') {
+        lifecycle.logPaymentSuccess({
+          booking,
+          txnid,
+          paymentId: mihpayid,
+          req,
+          gateway: 'payu',
+        });
+      } else if (paymentStatus === 'pending') {
+        lifecycle.logPaymentFailure({
+          booking,
+          txnid,
+          reason: `PayU status: ${status}`,
+          req,
+          gateway: 'payu',
+          status: 'pending',
+        });
+        lifecycle.logPaymentPendingEvent({
+          booking,
+          txnid,
+          req,
+          gateway: 'payu',
+          metadata: { payuStatus: status },
+        });
+      } else {
+        lifecycle.logPaymentFailure({
+          booking,
+          txnid,
+          reason: `PayU status: ${status}`,
+          req,
+          gateway: 'payu',
+        });
+      }
 
       console.log(`✅ Payment ${paymentStatus} for booking ${booking.bookingId}`);
       console.log('💾 Updated payment details:', {
@@ -2957,7 +3020,7 @@ await saveCustomerLog({
       
       console.log('\n📥 FOR POSTMAN TESTING - COPY THIS EXACT FAILURE DATA:');
       console.log('Content-Type: application/x-www-form-urlencoded');
-      console.log('POST URL:  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/failure');
+      console.log('POST URL:  https://api.waadi.in/api/v1/payment/failure');
       console.log('Form Data:');
       Object.keys(payuResponse).forEach(key => {
         if (payuResponse[key] !== undefined && payuResponse[key] !== null) {
@@ -2970,7 +3033,7 @@ await saveCustomerLog({
         .filter(key => payuResponse[key] !== undefined && payuResponse[key] !== null)
         .map(key => `${key}=${encodeURIComponent(payuResponse[key])}`)
         .join('&');
-      console.log(`curl -X POST  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/failure \\`);
+      console.log(`curl -X POST  https://api.waadi.in/api/v1/payment/failure \\`);
       console.log(`  -H "Content-Type: application/x-www-form-urlencoded" \\`);
       console.log(`  -d "${curlData}"`);
       
@@ -2978,6 +3041,7 @@ await saveCustomerLog({
 
       // Log the transaction (always PayU at this route – Cashfree uses its own webhook)
       payuService.logTransaction('FAILURE_CALLBACK', payuResponse);
+      lifecycle.logPayUCallbackReceived('failure', payuResponse, req);
 
       const { txnid, status, amount, udf1: bookingId, error_Message } = payuResponse;
 
@@ -3023,6 +3087,14 @@ await saveCustomerLog({
       }
 
       await booking.save();
+
+      lifecycle.logPaymentFailure({
+        booking,
+        txnid,
+        reason: error_Message || `PayU status: ${status}`,
+        req,
+        gateway: 'payu',
+      });
 
       try {
   const userId = booking.user?.toString();

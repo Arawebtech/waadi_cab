@@ -5,7 +5,7 @@ The Form Preferences API allows users to save, retrieve, and manage their form p
 
 ## Base URL
 ```
- https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/users/form-preferences
+ https://api.waadi.in/api/v1/users/form-preferences
 ```
 
 ## Authentication

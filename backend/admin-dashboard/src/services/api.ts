@@ -19,7 +19,7 @@ import {
 } from '../types';
 
 // Base URL for API
-const BASE_URL = process.env.REACT_APP_API_URL || 'https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1';
+const BASE_URL = process.env.REACT_APP_API_URL || 'https://api.waadi.in/api/v1';
 
 // Create axios instance
 const api = axios.create({
@@ -72,6 +72,54 @@ export class AdminAPI {
       }
     );
 
+    return response.data;
+  }
+
+  static async getAuditTrail(params: {
+    bookingId?: string;
+    transactionId?: string;
+    requestId?: string;
+    userId?: string;
+    limit?: number;
+  }) {
+    const response = await api.get('/admin/audit-trail', { params });
+    return response.data;
+  }
+
+  static async downloadJourneyReportPdf(params: {
+    bookingId?: string;
+    transactionId?: string;
+    userId?: string;
+  }): Promise<Blob> {
+    const response = await api.get('/admin/audit-trail/report', {
+      params,
+      responseType: 'blob',
+      timeout: 120000,
+    });
+    return response.data;
+  }
+
+  static getJourneyReportPdfUrl(params: {
+    bookingId?: string;
+    transactionId?: string;
+    userId?: string;
+  }) {
+    const qs = new URLSearchParams();
+    if (params.bookingId) qs.set('bookingId', params.bookingId);
+    if (params.transactionId) qs.set('transactionId', params.transactionId);
+    if (params.userId) qs.set('userId', params.userId);
+    return `${BASE_URL}/admin/audit-trail/report?${qs.toString()}`;
+  }
+
+  static async getSystemLogs(params?: {
+    bookingId?: string;
+    transactionId?: string;
+    requestId?: string;
+    category?: string;
+    level?: string;
+    limit?: number;
+  }) {
+    const response = await api.get('/admin/system-logs', { params });
     return response.data;
   }
 

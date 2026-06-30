@@ -20,8 +20,8 @@ test_states_filter() {
     echo "State IDs: $state_ids"
     
     # Make the API call and get response
-    local response=$(curl -s " https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/admin/bookings?page=1&limit=5&state_ids=$state_ids")
-    local http_code=$(curl -s -w "%{http_code}" -o /dev/null " https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/admin/bookings?page=1&limit=5&state_ids=$state_ids")
+    local response=$(curl -s " https://api.waadi.in/api/v1/admin/bookings?page=1&limit=5&state_ids=$state_ids")
+    local http_code=$(curl -s -w "%{http_code}" -o /dev/null " https://api.waadi.in/api/v1/admin/bookings?page=1&limit=5&state_ids=$state_ids")
     
     if [ "$http_code" = "200" ]; then
         # Extract result counts from JSON response
@@ -56,7 +56,7 @@ test_states_filter "689225a9b9d2b7cc874ad375,6891f4ae463073b51ec50c47" "HIMACHAL
 
 echo -e "\n${YELLOW}3. Testing with Other Filters${NC}"
 today=$(date +%Y-%m-%d)
-response=$(curl -s " https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/admin/bookings?page=1&limit=3&state_ids=689225a9b9d2b7cc874ad375&status=paid&date_from=$today&date_to=$today")
+response=$(curl -s " https://api.waadi.in/api/v1/admin/bookings?page=1&limit=3&state_ids=689225a9b9d2b7cc874ad375&status=paid&date_from=$today&date_to=$today")
 data_count=$(echo "$response" | jq '.data | length')
 total_count=$(echo "$response" | jq '.pagination.total')
 
@@ -72,7 +72,7 @@ fi
 
 echo -e "\n${YELLOW}4. Testing Response Performance${NC}"
 start_time=$(date +%s%N)
-curl -s " https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/admin/bookings?page=1&limit=5&state_ids=689225a9b9d2b7cc874ad375" > /dev/null
+curl -s " https://api.waadi.in/api/v1/admin/bookings?page=1&limit=5&state_ids=689225a9b9d2b7cc874ad375" > /dev/null
 end_time=$(date +%s%N)
 response_time=$(( (end_time - start_time) / 1000000 ))
 

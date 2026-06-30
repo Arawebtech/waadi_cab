@@ -88,7 +88,7 @@ Created and executed a migration script to update the existing database:
 
 ### **Before Fix**
 ```bash
-curl -X POST " https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/plans" \
+curl -X POST " https://api.waadi.in/api/v1/plans" \
   -H "Content-Type: application/json" \
   -d '{
     "vehicle_type_id": "689259aab9d2b7cc874afb3f",
@@ -106,7 +106,7 @@ curl -X POST " https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/plans" \
 
 ### **After Fix**
 ```bash
-curl -X POST " https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/plans" \
+curl -X POST " https://api.waadi.in/api/v1/plans" \
   -H "Content-Type: application/json" \
   -d '{
     "vehicle_type_id": "689259aab9d2b7cc874afb3f",
@@ -141,7 +141,7 @@ curl -X POST " https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/plans" \
 ### **Verification**
 ```bash
 # Check plans list for 4+1 vehicle type in Gujarat
-curl -s " https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/plans?vehicle_type_id=689259aab9d2b7cc874afb3f"
+curl -s " https://api.waadi.in/api/v1/plans?vehicle_type_id=689259aab9d2b7cc874afb3f"
 
 # Result: Monthly plan now appears in the list
 {
@@ -157,7 +157,7 @@ curl -s " https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/plans?vehicle_type_id=
 ### **Duplicate Prevention Test**
 ```bash
 # Try to create duplicate active plan (should fail)
-curl -X POST " https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/plans" \
+curl -X POST " https://api.waadi.in/api/v1/plans" \
   -H "Content-Type: application/json" \
   -d '{
     "vehicle_type_id": "689259aab9d2b7cc874afb3f",

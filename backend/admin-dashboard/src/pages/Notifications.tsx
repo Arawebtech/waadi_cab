@@ -13,7 +13,7 @@ const Notifications: React.FC = () => {
     setIsSending(true);
     setResult(null);
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1';
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://api.waadi.in/api/v1';
       const res = await fetch(`${apiUrl}/push/send-to-all`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -36,7 +36,7 @@ const Notifications: React.FC = () => {
     setIsSending(true);
     setResult(null);
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1';
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://api.waadi.in/api/v1';
       const res = await fetch(`${apiUrl}/push/send-to-user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

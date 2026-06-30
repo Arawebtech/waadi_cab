@@ -598,11 +598,14 @@ const saveCustomerLog = require('../utils/saveCustomerLog');
 const { isAppPlatformRequest } = require('../utils/platformRequest');
 const User = require('../models/User');
 const gatewayResolver = require('../config/gatewayResolver');
+const lifecycle = require('../utils/bookingLifecycleLogger');
 
 
 class BookingController {
   // POST /bookings - Create new booking
   async createBooking(req, res) {
+
+    lifecycle.logBookingRequestReceived(req);
 
     try {
       const {
@@ -619,13 +622,17 @@ class BookingController {
   
       if (!visiting_state || !vehicle_number || !seat_capacity || !whatsapp_number ||
         !entry_border || !tax_mode || !tax_from_date || !tax_upto_date || amount === undefined) {
+        lifecycle.logBookingValidationFailed(req, 'Missing required fields');
         return res.status(400).json({ success: false, message: 'All fields are required' });
       }
   
       const state = await State.findById(visiting_state);
       if (!state) {
+        lifecycle.logBookingValidationFailed(req, 'State not found');
         return res.status(404).json({ success: false, message: 'State not found' });
       }
+
+      lifecycle.logBookingCreationStarted(req);
   
       const booking = new Booking({
         user: req.user._id,
@@ -645,6 +652,8 @@ class BookingController {
         { path: 'visiting_state', select: 'name' },
         { path: 'user', select: 'firstName lastName phoneNumber email' }
       ]);
+
+      lifecycle.logBookingCreated(savedBooking, req, { gateway: 'pending' });
 
       await saveCustomerLog({
   userId: req.user._id,
@@ -708,6 +717,14 @@ class BookingController {
               };
             }
 
+            lifecycle.logPaymentInitiated({
+              booking: savedBooking,
+              txnid: paymentPreparation.paymentData?.txnid,
+              gateway: gatewayName,
+              req,
+              payload: paymentData,
+            });
+
           } else {
             paymentError = paymentPreparation.error || 'Payment preparation failed';
             console.error(`❌ [${gatewayName}] preparePaymentData failed:`, paymentPreparation.error);
@@ -743,6 +760,7 @@ class BookingController {
 
       res.status(201).json(response);
     } catch (error) {
+      lifecycle.logBookingCreationFailed(req, error);
       console.error("Create booking error:", error);
       res.status(500).json({ success: false, message: "Failed to create booking" });
     }
@@ -891,6 +909,7 @@ class BookingController {
         });
       }
 
+      const previousStatus = booking.status;
       booking.status = status;
       
       // If status is being set to paid, update payment details
@@ -905,6 +924,11 @@ class BookingController {
       }
       
       const updatedBooking = await booking.save();
+
+      lifecycle.logBookingStatusChange(updatedBooking, previousStatus, status, req, {
+        payment_method,
+        transaction_id,
+      });
       
       // Populate state and user information
       await updatedBooking.populate([

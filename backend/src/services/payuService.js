@@ -1,4 +1,6 @@
 const crypto = require('crypto');
+const logger = require('../utils/logger');
+const { maskSensitive } = require('../utils/maskSensitive');
 
 class PayUService {
   constructor() {
@@ -6,8 +8,8 @@ class PayUService {
     this.salt =  process.env.PAYU_SALT  || process.env.PAYU_MERCHANT_SALT ;
     this.environment ='production';
     this.verifyUrl = process.env.PAYU_VERIFY_URL || 'https://info.payu.in/merchant/postservice.php?form=2';
-    this.successUrl = process.env.PAYU_SUCCESS_URL || 'https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/success';
-    this.failureUrl = process.env.PAYU_FAILURE_URL || 'https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/failure';
+    this.successUrl = process.env.PAYU_SUCCESS_URL || 'https://api.waadi.in/api/v1/payment/success';
+    this.failureUrl = process.env.PAYU_FAILURE_URL || 'https://api.waadi.in/api/v1/payment/failure';
     this.paymentUrl = 'https://secure.payu.in/_payment' ;
     
     // Log configuration for debugging
@@ -27,7 +29,14 @@ class PayUService {
   generateTransactionId(bookingId) {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-    return `ORDER_${bookingId}_${timestamp}_${random}`;
+    const txnid = `ORDER_${bookingId}_${timestamp}_${random}`;
+    logger.payment('PayU transaction ID generated', {
+      sourceFile: 'payuService.js',
+      sourceFunction: 'generateTransactionId',
+      transactionId: txnid,
+      bookingId,
+    });
+    return txnid;
   }
 
   /**
@@ -96,9 +105,14 @@ class PayUService {
     // PayU hash formula: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5|udf6|udf7|udf8|udf9|udf10|salt
     const hashString = `${this.key}|${txnid}|${amount}|${productinfo}|${firstname}|${email}|${udf1}|${udf2}|${udf3}|${udf4}|${udf5}|${udf6}|${udf7}|${udf8}|${udf9}|${udf10}|${this.salt}`;
     
-    console.log('Hash string for PayU:', hashString);
-    
     const hash = crypto.createHash('sha512').update(hashString).digest('hex');
+    logger.payment('PayU hash generated', {
+      sourceFile: 'payuService.js',
+      sourceFunction: 'generateHash',
+      transactionId: txnid,
+      bookingId: udf1 || udf2,
+      amount,
+    });
     return hash;
   }
 
@@ -201,6 +215,22 @@ class PayUService {
     console.log('Calculated hash:', calculatedHash);
     console.log('Received hash:', receivedHash);
     console.log('=== END COPY-PASTE ===\n');
+
+    logger.payment('PayU hash verification', {
+      sourceFile: 'payuService.js',
+      sourceFunction: 'verifyHash',
+      transactionId: txnid,
+      verified: matched,
+      status,
+    });
+
+    if (!matched) {
+      logger.security('PayU hash verification failed', {
+        sourceFile: 'payuService.js',
+        sourceFunction: 'verifyHash',
+        transactionId: txnid,
+      });
+    }
 
     return matched;
   }
@@ -350,6 +380,16 @@ class PayUService {
       amount: data.amount,
       status: data.status || 'initiated',
       bookingId: data.udf1 || data.bookingId
+    });
+    logger.payment(`PayU transaction: ${type}`, {
+      sourceFile: 'payuService.js',
+      sourceFunction: 'logTransaction',
+      transactionType: type,
+      transactionId: data.txnid,
+      amount: data.amount,
+      status: data.status || 'initiated',
+      bookingId: data.udf1 || data.bookingId,
+      payload: maskSensitive(data),
     });
   }
 }

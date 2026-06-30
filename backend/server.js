@@ -28,12 +28,15 @@ const versionTrackingRoutes = require('./src/routes/versionTrackingRoutes');
 const validationRoutes = require('./src/routes/validationRoutes');
 const cashfreeRoutes      = require('./src/routes/cashfreeRoutes');
 const gatewayAdminRoutes  = require('./src/routes/gatewayAdminRoutes');
+const logRoutes           = require('./src/routes/logRoutes');
  
 const whatsappService = require('./src/services/whatsappService');
 
 // Import middleware
 const errorHandler = require('./src/middleware/errorHandler');
 const notFound = require('./src/middleware/notFound');
+const correlationId = require('./src/middleware/correlationId');
+const requestLogger = require('./src/middleware/requestLogger');
 const { checkMaintenanceMode } = require('./src/middleware/maintenanceCheck');
 
 const app = express();
@@ -41,8 +44,8 @@ const server = createServer(app);
 const io = new Server(server, {
     cors: {
       origin: process.env.NODE_ENV === 'production' 
-        ? ['https://localhost','http://localhost:3000','https://mdk7v2f6-3000.inc1.devtunnels.ms','http://localhost:3000', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3000", "https://mdk7v2f6-4001.inc1.devtunnels.ms/", " https://mdk7v2f6-4001.inc1.devtunnels.ms/", "http://192.168.1.36:3000", "https://book.waadi.in", 'http://localhost:3000',  "http://localhost:3000:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3002"]
-        : ['https://localhost','http://localhost:3000','https://mdk7v2f6-3000.inc1.devtunnels.ms','http://localhost:3000', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3000", "https://mdk7v2f6-4001.inc1.devtunnels.ms/", " https://mdk7v2f6-4001.inc1.devtunnels.ms/", "http://192.168.1.36:3000", "https://book.waadi.in",  'http://localhost:3000',  "http://localhost:3000:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3002"],
+        ? ['https://localhost','http://localhost:3000','https://book.waadi.in','http://localhost:3000', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3001", "https://api.waadi.in/", " https://api.waadi.in/", "http://192.168.1.36:3000", "https://book.waadi.in", 'http://localhost:3000',  "http://localhost:3000:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3002"]
+        : ['https://localhost','http://localhost:3000','https://book.waadi.in','http://localhost:3000', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3001", "https://api.waadi.in/", " https://api.waadi.in/", "http://192.168.1.36:3000", "https://book.waadi.in",  'http://localhost:3000',  "http://localhost:3000:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3002"],
       credentials: true
     }
 });
@@ -73,8 +76,8 @@ app.use(compression());
 // CORS configuration
   app.use(cors({
     origin: process.env.NODE_ENV === 'production' 
-      ?['https://localhost','http://localhost:3000','https://mdk7v2f6-3000.inc1.devtunnels.ms', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3000", " https://mdk7v2f6-4001.inc1.devtunnels.ms/", " https://mdk7v2f6-4001.inc1.devtunnels.ms/", "http://192.168.1.36:3000", "https://book.waadi.in", 'http://localhost:3000', "http://localhost:3000:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3001","http://127.0.0.1:3002"]
-      : ['https://localhost','https://mdk7v2f6-3000.inc1.devtunnels.ms','http://localhost:3000', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3000", " https://mdk7v2f6-4001.inc1.devtunnels.ms/", " https://mdk7v2f6-4001.inc1.devtunnels.ms/", "http://192.168.1.36:3000", "https://book.waadi.in", 'http://localhost:3000',  "http://localhost:3000:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3001", "http://127.0.0.1:3002"],
+      ?['https://localhost','http://localhost:3000','https://book.waadi.in', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3001", " https://api.waadi.in/", " https://api.waadi.in/", "http://192.168.1.36:3000", "https://book.waadi.in", 'http://localhost:3000', "http://localhost:3000:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3001","http://127.0.0.1:3002"]
+      : ['https://localhost','https://book.waadi.in','http://localhost:3000', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3001", " https://api.waadi.in/", " https://api.waadi.in/", "http://192.168.1.36:3000", "https://book.waadi.in", 'http://localhost:3000',  "http://localhost:3000:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3001", "http://127.0.0.1:3002"],
     credentials: true
   }));
 
@@ -97,11 +100,17 @@ app.use(
 app.use('/api/v1/payment/success', express.raw({ type: ['application/x-www-form-urlencoded', 'multipart/form-data'], limit: '10mb' }));
 app.use('/api/v1/payment/failure', express.raw({ type: ['application/x-www-form-urlencoded', 'multipart/form-data'], limit: '10mb' }));
 
-// Body parsing middleware
+// Correlation ID (early — available for all handlers)
+app.use(correlationId);
+
+// Raw body parser for payment callbacks (before other body parsers)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Database connection 
+// Structured API logging (after body parsers)
+app.use(requestLogger);
+
+// Database connection
 
 
 console.log("get the real db name",process.env.MONGODB_URI)
@@ -206,6 +215,7 @@ app.use('/api/v1', cabBookingRoutes);
 app.use('/api/v1', appVersionRoutes); // App version routes
 app.use('/api/v1', versionTrackingRoutes); // Version tracking routes
 app.use('/api/v1', validationRoutes); // Validation routes
+app.use('/api/v1/logs', logRoutes); // Client log ingestion
 
 // Error handling middleware
 app.use(notFound);

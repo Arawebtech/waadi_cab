@@ -31,7 +31,7 @@ async function testWhatsAppWeb() {
         console.log('   To test message sending, use the admin panel or API endpoints');
       } else {
         console.log('3. WhatsApp not ready yet - waiting for connection...');
-        console.log('   Visit:  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/whatsapp/qr-page');
+        console.log('   Visit:  https://api.waadi.in/api/v1/whatsapp/qr-page');
         console.log('   Or use the admin panel to scan QR code');
       }
     }
@@ -45,8 +45,8 @@ async function testWhatsAppWeb() {
     console.log('   POST /api/v1/whatsapp/disconnect - Disconnect service');
     
     console.log('\n🎯 Payment callback URLs:');
-    console.log('   Success:  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/success');
-    console.log('   Failure:  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/failure');
+    console.log('   Success:  https://api.waadi.in/api/v1/payment/success');
+    console.log('   Failure:  https://api.waadi.in/api/v1/payment/failure');
     
     console.log('\n✅ WhatsApp Web integration test completed!');
     

@@ -10,11 +10,11 @@ PAYU_KEY=7SlgzK
 PAYU_SALT=jEPdbPrStSB1iXVlsQoCoPZpkQudYFIg
 
 # IMPORTANT: PayU Callback URLs (Must be accessible from PayU servers)
-PAYU_SUCCESS_URL= https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/success
-PAYU_FAILURE_URL= https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/failure
+PAYU_SUCCESS_URL= https://api.waadi.in/api/v1/payment/success
+PAYU_FAILURE_URL= https://api.waadi.in/api/v1/payment/failure
 
 # Frontend URL (optional - for user redirects)
-FRONTEND_URL=https://mdk7v2f6-3000.inc1.devtunnels.ms
+FRONTEND_URL=https://book.waadi.in
 ```
 
 ## 🚨 Critical Requirements for Success URL to Work
@@ -27,8 +27,8 @@ Your tunnel URL `https://bfmwpsbs-4001.inc1.devtunnels.ms` must be:
 
 ### 2. **PayU Merchant Configuration**
 In your PayU merchant dashboard, ensure:
-- Success URL: ` https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/success`
-- Failure URL: ` https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/failure`
+- Success URL: ` https://api.waadi.in/api/v1/payment/success`
+- Failure URL: ` https://api.waadi.in/api/v1/payment/failure`
 - Both URLs are whitelisted in your PayU account
 
 ### 3. **Test Your Callback URLs**
@@ -36,12 +36,12 @@ Before testing payments, verify your URLs work:
 
 ```bash
 # Test if your success endpoint is accessible
-curl -X POST  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/success \
+curl -X POST  https://api.waadi.in/api/v1/payment/success \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "status=success&txnid=test123"
 
 # Test if your failure endpoint is accessible  
-curl -X POST  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/failure \
+curl -X POST  https://api.waadi.in/api/v1/payment/failure \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "status=failure&txnid=test123"
 ```
@@ -126,8 +126,8 @@ curl http://192.168.1.8:5000/api/v1/payment/test \
   "data": {
     "isValid": true,
     "configuration": {
-      "successUrl": " https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/success",
-      "failureUrl": " https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/failure"
+      "successUrl": " https://api.waadi.in/api/v1/payment/success",
+      "failureUrl": " https://api.waadi.in/api/v1/payment/failure"
     }
   }
 }

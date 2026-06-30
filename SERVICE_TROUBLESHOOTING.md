@@ -7,9 +7,9 @@ Run the service status checker:
 ```
 
 ## Service URLs
-- **Backend API**:  https://mdk7v2f6-4001.inc1.devtunnels.ms/
+- **Backend API**:  https://api.waadi.in/
 - **Admin Dashboard**: http://localhost:3000
-- **Health Check**:  https://mdk7v2f6-4001.inc1.devtunnels.ms/health
+- **Health Check**:  https://api.waadi.in/health
 
 ## Common Issues & Solutions
 
@@ -17,7 +17,7 @@ Run the service status checker:
 **Symptoms**: `timeout of 10000ms exceeded` or similar timeout errors in the dashboard
 
 **Solutions**:
-1. Check if backend is running: `curl  https://mdk7v2f6-4001.inc1.devtunnels.ms/health`
+1. Check if backend is running: `curl  https://api.waadi.in/health`
 2. Verify environment configuration: Check `.env` file in admin-dashboard directory
 3. Restart services: `./start-services.sh`
 
@@ -37,7 +37,7 @@ Run the service status checker:
 ### 3. Environment Configuration
 **File**: `/Users/coladco/Desktop/final_waadi/wadi_cab/backend/admin-dashboard/.env`
 ```env
-REACT_APP_API_URL= https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1
+REACT_APP_API_URL= https://api.waadi.in/api/v1
 ```
 
 ### 4. Service Management Scripts
