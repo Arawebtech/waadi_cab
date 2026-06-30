@@ -47,7 +47,7 @@ test_api() {
 
 # Check if backend is running
 echo "🔍 Checking backend status..."
-if curl -s -f https://api.waadi.in/health > /dev/null; then
+if curl -s -f  https://api.waadi.in/health > /dev/null; then
     echo -e "${GREEN}✅ Backend is running${NC}"
 else
     echo -e "${RED}❌ Backend is not responding${NC}"
@@ -58,19 +58,19 @@ fi
 echo -e "\n${YELLOW}Running Performance Tests...${NC}"
 
 # 1. Dashboard API
-test_api "https://api.waadi.in/api/v1/admin/dashboard" "Dashboard Stats" 1000
+test_api " https://api.waadi.in/api/v1/admin/dashboard" "Dashboard Stats" 1000
 
 # 2. Bookings API - Simple query
-test_api "https://api.waadi.in/api/v1/admin/bookings?page=1&limit=10&status=paid" "Bookings API (Simple)" 500
+test_api " https://api.waadi.in/api/v1/admin/bookings?page=1&limit=10&status=paid" "Bookings API (Simple)" 500
 
 # 3. Bookings API - Complex query with date range
-test_api "https://api.waadi.in/api/v1/admin/bookings?page=7&limit=20&status=paid&date_from=2025-09-27&date_to=2025-09-28&date_on=createdAt&sort_by=createdAt&sort_order=desc" "Bookings API (Complex)" 800
+test_api " https://api.waadi.in/api/v1/admin/bookings?page=7&limit=20&status=paid&date_from=2025-09-27&date_to=2025-09-28&date_on=createdAt&sort_by=createdAt&sort_order=desc" "Bookings API (Complex)" 800
 
 # 4. Bookings API - Search query
-test_api "https://api.waadi.in/api/v1/admin/bookings?page=1&limit=10&search=WC" "Bookings API (Search)" 600
+test_api " https://api.waadi.in/api/v1/admin/bookings?page=1&limit=10&search=WC" "Bookings API (Search)" 600
 
 # 5. Users API
-test_api "https://api.waadi.in/api/v1/admin/users?page=1&limit=10" "Users API" 800
+test_api " https://api.waadi.in/api/v1/admin/users?page=1&limit=10" "Users API" 800
 
 echo -e "\n${BLUE}Performance Test Summary${NC}"
 echo "========================="
@@ -81,5 +81,5 @@ echo "🔧 If any test fails, consider further optimization"
 # Optional: Test with different page numbers
 echo -e "\n${YELLOW}Testing pagination performance...${NC}"
 for page in 1 5 10 20; do
-    test_api "https://api.waadi.in/api/v1/admin/bookings?page=$page&limit=20&status=paid" "Bookings API (Page $page)" 800
+    test_api " https://api.waadi.in/api/v1/admin/bookings?page=$page&limit=20&status=paid" "Bookings API (Page $page)" 800
 done

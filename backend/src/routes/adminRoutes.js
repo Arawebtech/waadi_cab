@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
 const customerLogs = require('../controllers/customerLogsController');
+const logController = require('../controllers/logController');
 const InsuranceInquiry = require('../models/InsuranceInquiry');
 const CabBooking = require('../models/CabBooking');
 
@@ -9,6 +10,9 @@ const CabBooking = require('../models/CabBooking');
 router.get('/dashboard', adminController.getDashboardStats);
 router.get('/analytics', adminController.getAnalytics);
 router.get('/customer-logs', customerLogs.getLogs);
+router.get('/audit-trail', logController.getAuditTrail.bind(logController));
+router.get('/audit-trail/report', logController.downloadJourneyReportPdf.bind(logController));
+router.get('/system-logs', logController.getSystemLogs.bind(logController));
 
 
 // Admin Booking Management

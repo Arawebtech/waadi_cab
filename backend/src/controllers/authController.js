@@ -4,6 +4,7 @@ const JWTUtils = require('../utils/jwt');
 const otpService = require('../services/otpService');
 const { validationResult } = require('express-validator');
 const saveCustomerLog = require('../utils/saveCustomerLog');
+const journey = require('../utils/bookingLifecycleLogger');
 
 class AuthController {
   // Step 1: User signup (sends OTP)
@@ -299,6 +300,8 @@ class AuthController {
       
       await user.save();
 
+      journey.logUserLogin(user, req, { platform: req.headers['x-platform'] || 'web' });
+
       // Clean up old refresh tokens
       await JWTUtils.cleanupExpiredRefreshTokens(user._id, User);
 
@@ -471,6 +474,8 @@ class AuthController {
       logoutTime: new Date(),
     },
 });
+
+    journey.logUserLogout(userId, req, { phoneNumber: user?.phoneNumber });
 
     res.status(200).json({
       success: true,

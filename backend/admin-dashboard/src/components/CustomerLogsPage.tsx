@@ -46,6 +46,9 @@ export default function CustomerLogsPage() {
 
   const [phoneNumber, setPhoneNumber] = useState("");
   const [userId, setUserId] = useState("");
+  const [bookingId, setBookingId] = useState("");
+  const [transactionId, setTransactionId] = useState("");
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
 const fetchLogs = async () => {
   try {
@@ -93,6 +96,36 @@ const fetchLogs = async () => {
     );
   };
 
+  const downloadPdfReport = async (params: {
+    bookingId?: string;
+    transactionId?: string;
+    userId?: string;
+  }) => {
+    if (!params.bookingId && !params.transactionId && !params.userId) {
+      alert("Provide a Booking ID, Transaction ID, or User ID to generate the PDF report.");
+      return;
+    }
+
+    try {
+      setDownloadingPdf(true);
+      const blob = await AdminAPI.downloadJourneyReportPdf(params);
+      const ref = params.bookingId || params.transactionId || params.userId || "report";
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `WadiCab_Journey_Report_${ref}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to generate PDF report. Ensure audit trail data exists for this ID.");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
   const totalEvents = logs.reduce((sum, log) => sum + (log.totalEvents || 0), 0);
 
   return (
@@ -133,6 +166,50 @@ const fetchLogs = async () => {
         <div className="rounded-2xl bg-slate-900 p-5 shadow">
           <p className="text-sm text-slate-400">Journey Export</p>
           <h2 className="mt-2 text-lg font-semibold text-white">Enabled</h2>
+        </div>
+      </div>
+
+      {/* PDF Report Export */}
+      <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+        <h2 className="text-lg font-bold text-emerald-900">PayU Compliance PDF Report</h2>
+        <p className="mt-1 text-sm text-emerald-800">
+          Generate a client-ready PDF with the complete customer journey from live audit logs (Booking ID, Transaction ID, or User ID).
+        </p>
+        <div className="mt-4 grid gap-4 md:grid-cols-5">
+          <input
+            type="text"
+            placeholder="Booking ID (e.g. WC...)"
+            value={bookingId}
+            onChange={(e) => setBookingId(e.target.value)}
+            className="rounded-xl border border-emerald-300 px-4 py-3 outline-none focus:border-emerald-500"
+          />
+          <input
+            type="text"
+            placeholder="Transaction ID (PayU order)"
+            value={transactionId}
+            onChange={(e) => setTransactionId(e.target.value)}
+            className="rounded-xl border border-emerald-300 px-4 py-3 outline-none focus:border-emerald-500"
+          />
+          <input
+            type="text"
+            placeholder="User ID (optional override)"
+            value={userId}
+            onChange={(e) => setUserId(e.target.value)}
+            className="rounded-xl border border-emerald-300 px-4 py-3 outline-none focus:border-emerald-500"
+          />
+          <button
+            onClick={() =>
+              downloadPdfReport({
+                bookingId: bookingId.trim() || undefined,
+                transactionId: transactionId.trim() || undefined,
+                userId: userId.trim() || undefined,
+              })
+            }
+            disabled={downloadingPdf || (!bookingId.trim() && !transactionId.trim() && !userId.trim())}
+            className="md:col-span-2 rounded-xl bg-emerald-600 px-4 py-3 font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+          >
+            {downloadingPdf ? "Generating PDF…" : "Download PDF Report"}
+          </button>
         </div>
       </div>
 
@@ -283,6 +360,17 @@ const fetchLogs = async () => {
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600">
                   {selectedLog.totalEvents} events
                 </span>
+                {selectedLog.customer.userId && (
+                  <button
+                    onClick={() =>
+                      downloadPdfReport({ userId: selectedLog.customer.userId })
+                    }
+                    disabled={downloadingPdf}
+                    className="rounded-lg bg-emerald-600 px-4 py-2 text-sm text-white hover:bg-emerald-700 disabled:opacity-60"
+                  >
+                    {downloadingPdf ? "PDF…" : "Download PDF Report"}
+                  </button>
+                )}
                 <button
                   onClick={() => setSelectedLog(null)}
                   className="rounded-lg bg-red-500 px-4 py-2 text-white hover:bg-red-600"

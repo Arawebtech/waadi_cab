@@ -1,5 +1,6 @@
 const JWTUtils = require('../utils/jwt');
 const User = require('../models/User');
+const logger = require('../utils/logger');
 
 // Middleware to verify JWT token
 const authenticate = async (req, res, next) => {
@@ -7,6 +8,13 @@ const authenticate = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     
     if (!authHeader) {
+      logger.security('Unauthorized access — missing Authorization header', {
+        sourceFile: 'auth.js',
+        sourceFunction: 'authenticate',
+        endpoint: req.originalUrl,
+        method: req.method,
+        ip: req.ip,
+      });
       return res.status(401).json({
         success: false,
         message: 'Authorization header is required'
@@ -22,6 +30,12 @@ const authenticate = async (req, res, next) => {
     // Find user in database
     const user = await User.findById(decoded.userId);
     if (!user || !user.isActive) {
+      logger.security('Token validation failed — user not found or inactive', {
+        sourceFile: 'auth.js',
+        sourceFunction: 'authenticate',
+        userId: decoded.userId,
+        endpoint: req.originalUrl,
+      });
       return res.status(401).json({
         success: false,
         message: 'User not found or inactive'
@@ -44,6 +58,13 @@ const authenticate = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Authentication error:', error);
+    logger.security('Token validation failed', {
+      sourceFile: 'auth.js',
+      sourceFunction: 'authenticate',
+      endpoint: req.originalUrl,
+      error: error.message,
+      stack: error.stack,
+    });
     
     return res.status(401).json({
       success: false,

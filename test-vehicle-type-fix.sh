@@ -26,11 +26,11 @@ test_vehicle_type_creation() {
     echo "Vehicle Type: $vehicle_type_name"
     
     # Make the API call
-    local response=$(curl -s -X POST "https://api.waadi.in/api/v1/vehicle-types" \
+    local response=$(curl -s -X POST " https://api.waadi.in/api/v1/vehicle-types" \
         -H "Content-Type: application/json" \
         -d "{\"name\": \"$vehicle_type_name\", \"state_id\": \"$STATE_ID\"}")
     
-    local http_code=$(curl -s -w "%{http_code}" -o /dev/null -X POST "https://api.waadi.in/api/v1/vehicle-types" \
+    local http_code=$(curl -s -w "%{http_code}" -o /dev/null -X POST " https://api.waadi.in/api/v1/vehicle-types" \
         -H "Content-Type: application/json" \
         -d "{\"name\": \"$vehicle_type_name\", \"state_id\": \"$STATE_ID\"}")
     
@@ -103,21 +103,21 @@ echo -e "\n${YELLOW}Testing Soft Deletion Scenario${NC}"
 echo "Testing soft deletion (toggle 8+1 to inactive)..."
 
 # First, get the vehicle type ID
-vt_response=$(curl -s "https://api.waadi.in/api/v1/vehicle-types?state_id=$STATE_ID")
+vt_response=$(curl -s " https://api.waadi.in/api/v1/vehicle-types?state_id=$STATE_ID")
 vt_id=$(echo "$vt_response" | jq -r '.data[] | select(.name == "8+1") | ._id')
 
 if [ "$vt_id" != "null" ] && [ "$vt_id" != "" ]; then
     echo "   Found 8+1 with ID: $vt_id"
     
     # Toggle the vehicle type (deactivate)
-    toggle_response=$(curl -s -X PATCH "https://api.waadi.in/api/v1/vehicle-types/$vt_id/toggle")
+    toggle_response=$(curl -s -X PATCH " https://api.waadi.in/api/v1/vehicle-types/$vt_id/toggle")
     toggle_success=$(echo "$toggle_response" | jq -r '.success')
     
     if [ "$toggle_success" = "true" ]; then
         echo -e "${GREEN}✅ Successfully deactivated 8+1${NC}"
         
         # Verify it's not in the active list
-        new_list=$(curl -s "https://api.waadi.in/api/v1/vehicle-types?state_id=$STATE_ID")
+        new_list=$(curl -s " https://api.waadi.in/api/v1/vehicle-types?state_id=$STATE_ID")
         if echo "$new_list" | jq -e '.data[] | select(.name == "8+1")' > /dev/null; then
             echo -e "${RED}❌ 8+1 still appears in active list${NC}"
         else
@@ -126,7 +126,7 @@ if [ "$vt_id" != "null" ] && [ "$vt_id" != "" ]; then
         
         # Now try to create 8+1 again (should succeed)
         echo "   Testing recreation of 8+1..."
-        recreate_response=$(curl -s -X POST "https://api.waadi.in/api/v1/vehicle-types" \
+        recreate_response=$(curl -s -X POST " https://api.waadi.in/api/v1/vehicle-types" \
             -H "Content-Type: application/json" \
             -d "{\"name\": \"8+1\", \"state_id\": \"$STATE_ID\"}")
         

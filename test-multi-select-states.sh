@@ -30,29 +30,29 @@ test_endpoint() {
 
 # First, get some state IDs from the states endpoint
 echo -e "\n${YELLOW}1. Getting Available States${NC}"
-STATES_RESPONSE=$(curl -s "https://api.waadi.in/api/v1/states/admin")
+STATES_RESPONSE=$(curl -s " https://api.waadi.in/api/v1/states/admin")
 echo "States response: $STATES_RESPONSE" | head -3
 
 # Test with no state filter (should work)
 echo -e "\n${YELLOW}2. Testing No State Filter${NC}"
-test_endpoint "https://api.waadi.in/api/v1/admin/bookings?page=1&limit=5&status=paid" "No state filter" "200"
+test_endpoint " https://api.waadi.in/api/v1/admin/bookings?page=1&limit=5&status=paid" "No state filter" "200"
 
 # Test with single state (backward compatibility)
 echo -e "\n${YELLOW}3. Testing Single State Filter (Backward Compatibility)${NC}"
-test_endpoint "https://api.waadi.in/api/v1/admin/bookings?page=1&limit=5&state_id=6891f4ae463073b51ec50c47" "Single state filter" "200"
+test_endpoint " https://api.waadi.in/api/v1/admin/bookings?page=1&limit=5&state_id=6891f4ae463073b51ec50c47" "Single state filter" "200"
 
 # Test with multiple states
 echo -e "\n${YELLOW}4. Testing Multiple States Filter${NC}"
-test_endpoint "https://api.waadi.in/api/v1/admin/bookings?page=1&limit=5&state_ids=6891f4ae463073b51ec50c47,6891fe63463073b51ec50e86" "Multiple states filter" "200"
+test_endpoint " https://api.waadi.in/api/v1/admin/bookings?page=1&limit=5&state_ids=6891f4ae463073b51ec50c47,6891fe63463073b51ec50e86" "Multiple states filter" "200"
 
 # Test with multiple states and other filters
 echo -e "\n${YELLOW}5. Testing Multiple States with Other Filters${NC}"
 today=$(date +%Y-%m-%d)
-test_endpoint "https://api.waadi.in/api/v1/admin/bookings?page=1&limit=5&status=paid&state_ids=6891f4ae463073b51ec50c47,6891fe63463073b51ec50e86&date_from=$today&date_to=$today" "Multiple states with date filters" "200"
+test_endpoint " https://api.waadi.in/api/v1/admin/bookings?page=1&limit=5&status=paid&state_ids=6891f4ae463073b51ec50c47,6891fe63463073b51ec50e86&date_from=$today&date_to=$today" "Multiple states with date filters" "200"
 
 # Test with empty state_ids (should work like no filter)
 echo -e "\n${YELLOW}6. Testing Empty State IDs${NC}"
-test_endpoint "https://api.waadi.in/api/v1/admin/bookings?page=1&limit=5&state_ids=" "Empty state_ids" "200"
+test_endpoint " https://api.waadi.in/api/v1/admin/bookings?page=1&limit=5&state_ids=" "Empty state_ids" "200"
 
 echo -e "\n${GREEN}✅ Multi-select states filter tests completed!${NC}"
 echo -e "\n${BLUE}Summary:${NC}"

@@ -86,4 +86,6 @@ paymentGatewayConfigSchema.statics.switchGateway = async function (
   );
 };
 
-module.exports = mongoose.model('PaymentGatewayConfig', paymentGatewayConfigSchema);
+module.exports =
+  mongoose.models.PaymentGatewayConfig ||
+  mongoose.model("PaymentGatewayConfig", paymentGatewayConfigSchema);

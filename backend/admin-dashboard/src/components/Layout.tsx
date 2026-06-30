@@ -15,7 +15,8 @@ import {
   MessageCircle,
   Bell,
   Power,
-  Download
+  Download,
+  ScrollText
 } from 'lucide-react';
 import { useAuth } from './AuthContext';
 
@@ -116,6 +117,12 @@ const sidebarItems: SidebarItem[] = [
     path: '/customer-logs',
     icon: Settings,
     description: 'CustomerLogs'
+  },
+  {
+    name: 'Audit Trail',
+    path: '/audit-trail',
+    icon: ScrollText,
+    description: 'Booking & payment audit logs'
   },
      {
     name: 'Payment Change',

@@ -1,9 +1,29 @@
+const logger = require('../utils/logger');
+const { maskSensitive } = require('../utils/maskSensitive');
+
 const errorHandler = (err, req, res, next) => {
   let error = { ...err };
   error.message = err.message;
 
-  // Log error
-  console.error('🔥 Error:', err);
+  logger.error('error', err.message || 'Unhandled error', {
+    sourceFile: 'errorHandler.js',
+    sourceFunction: 'errorHandler',
+    requestId: req.requestId,
+    userId: req.user?._id?.toString(),
+    bookingId: req.correlation?.bookingId,
+    transactionId: req.correlation?.transactionId,
+    endpoint: req.originalUrl,
+    method: req.method,
+    statusCode: error.statusCode || 500,
+    stack: err.stack,
+    errorName: err.name,
+    errorCode: err.code,
+    request: maskSensitive({
+      query: req.query,
+      params: req.params,
+      body: Buffer.isBuffer(req.body) ? '[RAW_BUFFER]' : req.body,
+    }),
+  });
 
   // Mongoose bad ObjectId
   if (err.name === 'CastError') {
@@ -43,8 +63,9 @@ const errorHandler = (err, req, res, next) => {
   res.status(error.statusCode || 500).json({
     success: false,
     message: error.message || 'Server Error',
+    requestId: req.requestId,
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
 };
 
-module.exports = errorHandler; 
+module.exports = errorHandler;

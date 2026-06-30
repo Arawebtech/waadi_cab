@@ -125,4 +125,7 @@ paymentSchema.methods.getSummary = function() {
   };
 };
 
+const mongooseAuditPlugin = require('../utils/mongooseAuditPlugin');
+paymentSchema.plugin(mongooseAuditPlugin, { modelName: 'Payment' });
+
 module.exports = mongoose.model('Payment', paymentSchema);

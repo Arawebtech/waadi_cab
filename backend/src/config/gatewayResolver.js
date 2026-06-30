@@ -5,7 +5,7 @@
  * MongoDB determines activeGateway; credentials always come from .env.
  */
 
-const PaymentGatewayConfig = require('../models/PaymentGatewayConfig');
+const PaymentGatewayConfig = require('../models/PaymentGatewayconfig');
 const payuService = require('../services/payuService');
 const cashfreeService = require('../services/cashfreeService');
 const gatewayCredentials = require('../utils/gatewayCredentials');

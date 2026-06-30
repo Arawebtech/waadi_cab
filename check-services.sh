@@ -5,9 +5,9 @@ echo "====================================="
 
 # Check Backend Server
 echo "📡 Backend Server (Port 4001):"
-if curl -s -f https://api.waadi.in/health > /dev/null; then
+if curl -s -f  https://api.waadi.in/health > /dev/null; then
     echo "✅ Backend server is running and healthy"
-    echo "   Response time: $(curl -s -w "%{time_total}s" https://api.waadi.in/health -o /dev/null)"
+    echo "   Response time: $(curl -s -w "%{time_total}s"  https://api.waadi.in/health -o /dev/null)"
 else
     echo "❌ Backend server is not responding"
 fi
@@ -25,9 +25,9 @@ fi
 # Check API Endpoint
 echo ""
 echo "🔗 API Dashboard Endpoint:"
-if curl -s -f https://api.waadi.in/api/v1/admin/dashboard > /dev/null; then
+if curl -s -f  https://api.waadi.in/api/v1/admin/dashboard > /dev/null; then
     echo "✅ Dashboard API endpoint is working"
-    echo "   Response time: $(curl -s -w "%{time_total}s" https://api.waadi.in/api/v1/admin/dashboard -o /dev/null)"
+    echo "   Response time: $(curl -s -w "%{time_total}s"  https://api.waadi.in/api/v1/admin/dashboard -o /dev/null)"
 else
     echo "❌ Dashboard API endpoint is not responding"
 fi
@@ -45,6 +45,6 @@ fi
 echo ""
 echo "🚀 Services Status Summary:"
 echo "=========================="
-echo "Backend: $(curl -s -f https://api.waadi.in/health > /dev/null && echo "✅ Running" || echo "❌ Not Running")"
+echo "Backend: $(curl -s -f  https://api.waadi.in/health > /dev/null && echo "✅ Running" || echo "❌ Not Running")"
 echo "Dashboard: $(curl -s -f http://localhost:3000 > /dev/null && echo "✅ Running" || echo "❌ Not Running")"
-echo "API: $(curl -s -f https://api.waadi.in/api/v1/admin/dashboard > /dev/null && echo "✅ Working" || echo "❌ Not Working")"
+echo "API: $(curl -s -f  https://api.waadi.in/api/v1/admin/dashboard > /dev/null && echo "✅ Working" || echo "❌ Not Working")"

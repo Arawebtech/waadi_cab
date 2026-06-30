@@ -7,48 +7,59 @@ class CashfreeService {
   constructor() {
     this.appId = process.env.CASHFREE_APP_ID || '';
     this.secretKey = process.env.CASHFREE_SECRET_KEY || '';
-    this.environment = process.env.CASHFREE_ENVIRONMENT || 'sandbox';
+    this.environment = (process.env.CASHFREE_ENVIRONMENT || 'sandbox').trim().toLowerCase();
     this.webhookSecret = process.env.CASHFREE_WEBHOOK_SECRET || '';
 
-    this.successUrl =
-      process.env.CASHFREE_SUCCESS_URL ||
-      'https://api.waadi.in/api/v1/payment/cashfree/success';
-    this.failureUrl =
-      process.env.CASHFREE_FAILURE_URL ||
-      'https://api.waadi.in/api/v1/payment/cashfree/failure';
+    const apiBase = (process.env.API_BASE_URL || process.env.BACKEND_URL || 'https://api.waadi.in')
+      .trim()
+      .replace(/\/+$/, '');
 
-    // Cashfree API base URLs
+    // Match PayU callback host (stable server) — dev tunnels crash CCT on Android
+    const payuSuccess = (process.env.PAYU_SUCCESS_URL || '').trim();
+    const callbackBase = payuSuccess
+      ? payuSuccess.replace(/\/api\/v1\/payment\/success\/?$/i, '')
+      : apiBase;
+
+    this.successUrl = (
+      process.env.CASHFREE_SUCCESS_URL ||
+      `${callbackBase}/api/v1/payment/cashfree/success`
+    ).trim();
+
+    this.failureUrl = (
+      process.env.CASHFREE_FAILURE_URL ||
+      `${callbackBase}/api/v1/payment/cashfree/failure`
+    ).trim();
+
+    this.apiBase = apiBase;
+
     this.baseUrl =
       this.environment === 'production'
         ? 'https://api.cashfree.com/pg'
         : 'https://sandbox.cashfree.com/pg';
 
-    // Cashfree API version (use latest stable)
+    // Backend relay entry — mirrors payuService.paymentUrl pointing at the gateway/relay
+    this.relayUrl = `${this.apiBase}/api/v1/payment/cashfree/relay`;
+
     this.apiVersion = '2023-08-01';
 
     console.log('🔧 Cashfree Service Configuration:');
     console.log('  App ID:', this.appId ? `${this.appId.substring(0, 6)}***` : 'NOT SET');
     console.log('  Environment:', this.environment);
     console.log('  Base URL:', this.baseUrl);
+    console.log('  Relay URL:', this.relayUrl);
     console.log('  Success URL:', this.successUrl);
     console.log('  Failure URL:', this.failureUrl);
   }
 
-  // ─── Helpers ────────────────────────────────────────────────────────────────
-
   /**
-   * Generate a unique order ID that Cashfree will reference.
-   * Format mirrors payuService.generateTransactionId()
+   * Generate transaction ID — mirrors payuService.generateTransactionId()
    */
-  generateOrderId(bookingId) {
+  generateTransactionId(bookingId) {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-    return `CF_${bookingId}_${timestamp}_${random}`;
+    return `ORDER_${bookingId}_${timestamp}_${random}`;
   }
 
-  /**
-   * Return the Axios headers required for every Cashfree API call.
-   */
   _headers() {
     return {
       'x-client-id': this.appId,
@@ -58,47 +69,74 @@ class CashfreeService {
     };
   }
 
-  // ─── Core: Create Payment Session ───────────────────────────────────────────
+  /**
+   * Cashfree checkout requires payment_session_id from POST /orders — never order_id / txnid.
+   */
+  validatePaymentSessionId(paymentSessionId) {
+    if (paymentSessionId === undefined || paymentSessionId === null) {
+      return { valid: false, error: 'payment_session_id is required' };
+    }
+
+    const id = String(paymentSessionId).trim();
+    if (!id) {
+      return { valid: false, error: 'payment_session_id cannot be empty' };
+    }
+    if (!id.startsWith('session_')) {
+      return { valid: false, error: 'payment_session_id must start with "session_"' };
+    }
+
+    return { valid: true, value: id };
+  }
+
+  normalizePhone(phone) {
+    const digits = String(phone || '').replace(/\D/g, '');
+    if (digits.length >= 10) return digits.slice(-10);
+    return digits;
+  }
+
+  buildReturnUrl(platform = 'web') {
+    const base = `${this.successUrl}?order_id={order_id}`;
+    return platform === 'app' ? `${base}&platform=app` : base;
+  }
+
+  /** Relay entry path — frontend opens `${API}/payment/cashfree/relay` like PayU `/payment/relay`. */
+  getRelayPath() {
+    return `${this.apiBase}/api/v1/payment/cashfree/relay`;
+  }
 
   /**
-   * Create a Cashfree payment order and return the payment_session_id
-   * needed by the Cashfree JS SDK on the frontend.
-   *
-   * @param {Object} bookingData  – { bookingId, amount, tax_mode, visiting_state, vehicle_number, _id }
-   * @param {Object} userData     – { firstName, email, phoneNumber }
-   * @returns {Object}  { success, orderId, paymentSessionId, paymentUrl, expiresAt }
+   * Prepare payment data — mirrors payuService.preparePaymentData() return shape:
+   * { success, paymentUrl, paymentData }
    */
-  async preparePaymentData(bookingData, userData) {
+  async preparePaymentData(bookingData, userData, options = {}) {
     try {
-      const orderId = this.generateOrderId(bookingData.bookingId);
+      const txnid = this.generateTransactionId(bookingData.bookingId);
       const amount = parseFloat(bookingData.amount).toFixed(2);
+      const email = userData.email || `${userData.phoneNumber}@wadisupport.com`;
+      const phone = this.normalizePhone(userData.phoneNumber);
 
-      const email =
-        userData.email || `${userData.phoneNumber}@wadisupport.com`;
+      if (!phone || phone.length !== 10) {
+        return { success: false, error: 'Valid 10-digit customer phone is required for Cashfree' };
+      }
+
+      const customerName =
+        (userData.firstName && String(userData.firstName).trim()) || 'Customer';
 
       const orderPayload = {
-        order_id: orderId,
+        order_id: txnid,
         order_amount: parseFloat(amount),
         order_currency: 'INR',
         order_note: `Border Tax Pass - ${bookingData.tax_mode} - ${bookingData.visiting_state?.name || ''}`,
-
         customer_details: {
           customer_id: userData._id ? userData._id.toString() : `USER_${Date.now()}`,
-          customer_name: userData.firstName,
+          customer_name: customerName,
           customer_email: email,
-          customer_phone: userData.phoneNumber,
+          customer_phone: phone,
         },
-
-        // order_meta: {
-        //   return_url: `${this.successUrl}?order_id={order_id}&order_token={order_token}`,
-        //   notify_url: `${process.env.API_BASE_URL || 'https://api.waadi.in/'}/api/v1/payment/cashfree/webhook`,
-        // },
         order_meta: {
-  return_url: `${this.successUrl}?order_id={order_id}`,
-  notify_url: `${process.env.API_BASE_URL || 'https://api.waadi.in/'}/api/v1/payment/cashfree/webhook`,
-},
-
-        // Store our internal references in order_tags (max 10 k-v pairs)
+          return_url: this.buildReturnUrl(options.platform || 'web'),
+          notify_url: `${this.apiBase}/api/v1/payment/cashfree/webhook`,
+        },
         order_tags: {
           booking_object_id: bookingData._id ? bookingData._id.toString() : '',
           booking_id: bookingData.bookingId || '',
@@ -106,7 +144,12 @@ class CashfreeService {
         },
       };
 
-      console.log('📤 Creating Cashfree order:', orderId);
+      console.log('📤 Creating Cashfree order:', {
+        order_id: txnid,
+        amount,
+        environment: this.environment,
+        platform: options.platform || 'web',
+      });
 
       const response = await axios.post(
         `${this.baseUrl}/orders`,
@@ -116,21 +159,42 @@ class CashfreeService {
 
       const data = response.data;
 
+      const sessionValidation = this.validatePaymentSessionId(data.payment_session_id);
+      if (!sessionValidation.valid) {
+        console.error('❌ Cashfree order invalid payment_session_id:', {
+          error: sessionValidation.error,
+          order_id: data.order_id,
+          response_keys: data ? Object.keys(data) : [],
+        });
+        return { success: false, error: sessionValidation.error };
+      }
+
+      const mode = this.environment === 'production' ? 'production' : 'sandbox';
+
+      // Flat string map — mirrors PayU paymentData shape; checkout uses payment_session_id only
+      const paymentData = {
+        payment_session_id: sessionValidation.value,
+        mode,
+        txnid: String(data.order_id),
+        amount: String(amount),
+      };
+
+      if (options.platform === 'app') {
+        paymentData.platform = 'app';
+      }
+
       console.log('✅ Cashfree order created:', {
         order_id: data.order_id,
+        payment_session_id: `${sessionValidation.value.substring(0, 24)}…`,
         order_status: data.order_status,
-        payment_session_id: data.payment_session_id ? '***' : 'MISSING',
+        environment: this.environment,
+        mode,
       });
 
       return {
         success: true,
-        orderId: data.order_id,
-        paymentSessionId: data.payment_session_id,
-        expiresAt: data.order_expiry_time,
-        // Checkout page URL (redirect flow) – returned but SDK flow is preferred
-        paymentUrl: `${this.baseUrl}/checkout?session_id=${data.payment_session_id}`,
-        environment: this.environment,
-        cfOrderId: data.cf_order_id,
+        paymentUrl: this.relayUrl,
+        paymentData,
       };
     } catch (error) {
       const msg =
@@ -138,30 +202,27 @@ class CashfreeService {
         error.response?.data?.error_detail ||
         error.message;
       console.error('❌ Cashfree preparePaymentData error:', msg);
+      if (error.response?.data) {
+        console.error('❌ Cashfree API response:', JSON.stringify(error.response.data));
+      }
+      if (error.stack) {
+        console.error('❌ Cashfree preparePaymentData stack:', error.stack);
+      }
       return { success: false, error: msg };
     }
   }
 
-  // ─── Verify / Fetch Order ────────────────────────────────────────────────────
-
-  /**
-   * Fetch order status directly from Cashfree API (authoritative verification).
-   * @param {string} orderId – Our internal order_id / txn_id
-   * @returns {Object} { verified, status, cashfreeOrderId, amount, paymentId }
-   */
   async verifyOrder(orderId) {
     try {
       console.log('🔍 Verifying Cashfree order:', orderId);
 
-      const response = await axios.get(
-        `${this.baseUrl}/orders/${orderId}`,
-        { headers: this._headers(), timeout: 15000 }
-      );
+      const response = await axios.get(`${this.baseUrl}/orders/${orderId}`, {
+        headers: this._headers(),
+        timeout: 15000,
+      });
 
       const data = response.data;
       const status = (data.order_status || '').toUpperCase();
-
-      console.log('🔍 Cashfree order status:', status);
 
       return {
         verified: status === 'PAID',
@@ -172,74 +233,45 @@ class CashfreeService {
         rawData: data,
       };
     } catch (error) {
-      const msg =
-        error.response?.data?.message || error.message;
+      const msg = error.response?.data?.message || error.message;
       console.error('❌ Cashfree verifyOrder error:', msg);
       return { verified: false, status: 'ERROR', error: msg };
     }
   }
 
-  /**
-   * Fetch individual payment details for an order.
-   * Returns the first successful payment (if any).
-   */
   async getOrderPayments(orderId) {
     try {
-      const response = await axios.get(
-        `${this.baseUrl}/orders/${orderId}/payments`,
-        { headers: this._headers(), timeout: 15000 }
-      );
+      const response = await axios.get(`${this.baseUrl}/orders/${orderId}/payments`, {
+        headers: this._headers(),
+        timeout: 15000,
+      });
       return { success: true, payments: response.data };
     } catch (error) {
       return { success: false, error: error.message, payments: [] };
     }
   }
 
-  // ─── Webhook Signature Verification ─────────────────────────────────────────
-
-  /**
-   * Verify the Cashfree webhook signature.
-   * Cashfree sends: x-webhook-signature, x-webhook-timestamp
-   *
-   * @param {string} rawBody     – Raw request body string (not parsed)
-   * @param {string} signature   – Value of x-webhook-signature header
-   * @param {string} timestamp   – Value of x-webhook-timestamp header
-   * @returns {boolean}
-   */
   verifyWebhookSignature(rawBody, signature, timestamp) {
     try {
       const secret = this.webhookSecret || process.env.CASHFREE_WEBHOOK_SECRET;
       if (!secret) {
         console.warn('⚠️  CASHFREE_WEBHOOK_SECRET not set – skipping signature check');
-        return true; // Permissive in dev; set the secret in production!
+        return true;
       }
 
-      // Cashfree signs: timestamp + rawBody
       const signedPayload = timestamp + rawBody;
       const computed = crypto
         .createHmac('sha256', secret)
         .update(signedPayload)
         .digest('base64');
 
-      const valid = computed === signature;
-      if (!valid) {
-        console.error('❌ Cashfree webhook signature mismatch');
-        console.error('   Computed :', computed);
-        console.error('   Received :', signature);
-      }
-      return valid;
+      return computed === signature;
     } catch (err) {
       console.error('❌ Cashfree signature verification error:', err);
       return false;
     }
   }
 
-  // ─── Status Normalisation ────────────────────────────────────────────────────
-
-  /**
-   * Map Cashfree order/payment status → our internal status.
-   * Mirrors payuService.getPaymentStatus()
-   */
   getPaymentStatus(cashfreeStatus) {
     const map = {
       PAID: 'paid',
@@ -252,7 +284,21 @@ class CashfreeService {
     return map[(cashfreeStatus || '').toUpperCase()] || 'failed';
   }
 
-  // ─── Config Validation ───────────────────────────────────────────────────────
+  /**
+   * Status for client polling — never report failure while checkout may still be open.
+   * Mirrors PayU polling where missing/failed API reads are treated as "still waiting".
+   */
+  resolvePollingStatus(cashfreeStatus, bookingStatus = 'pending') {
+    const upper = (cashfreeStatus || '').toUpperCase();
+    if (upper === 'ERROR' || upper === '') {
+      return bookingStatus === 'paid' ? 'paid' : 'pending';
+    }
+    const normalized = this.getPaymentStatus(upper);
+    if (normalized === 'failed' || normalized === 'cancelled') {
+      return bookingStatus === 'paid' ? 'paid' : normalized;
+    }
+    return normalized;
+  }
 
   validateConfig() {
     const errors = [];
@@ -261,23 +307,17 @@ class CashfreeService {
     if (!this.successUrl) errors.push('CASHFREE_SUCCESS_URL is required');
     if (!this.failureUrl) errors.push('CASHFREE_FAILURE_URL is required');
 
-    console.log('🔍 Cashfree Config Validation:');
-    console.log('  App ID set:', !!this.appId);
-    console.log('  Secret Key set:', !!this.secretKey);
-    console.log('  Environment:', this.environment);
-
     return { isValid: errors.length === 0, errors };
   }
-
-  // ─── Logging ─────────────────────────────────────────────────────────────────
 
   logTransaction(type, data) {
     console.log(`🔄 Cashfree Transaction [${type}]:`, {
       timestamp: new Date().toISOString(),
       type,
-      orderId: data.orderId || data.order_id,
-      amount: data.amount || data.order_amount,
+      txnid: data.txnid || data.orderId || data.order_id,
+      amount: data.amount,
       status: data.status || 'initiated',
+      bookingId: data.bookingId || data.udf2,
     });
   }
 }
