@@ -990,7 +990,7 @@
       
 //       console.log('\n📥 FOR POSTMAN TESTING - COPY THIS EXACT DATA:');
 //       console.log('Content-Type: application/x-www-form-urlencoded');
-//       console.log('POST URL:  http://localhost:4001/api/v1/payment/success');
+//       console.log('POST URL:  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/success');
 //       console.log('Form Data:');
 //       Object.keys(payuResponse).forEach(key => {
 //         if (payuResponse[key] !== undefined && payuResponse[key] !== null) {
@@ -1003,7 +1003,7 @@
 //         .filter(key => payuResponse[key] !== undefined && payuResponse[key] !== null)
 //         .map(key => `${key}=${encodeURIComponent(payuResponse[key])}`)
 //         .join('&');
-//       console.log(`curl -X POST  http://localhost:4001/api/v1/payment/success \\`);
+//       console.log(`curl -X POST  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/success \\`);
 //       console.log(`  -H "Content-Type: application/x-www-form-urlencoded" \\`);
 //       console.log(`  -d "${curlData}"`);
       
@@ -1293,7 +1293,7 @@
       
 //       console.log('\n📥 FOR POSTMAN TESTING - COPY THIS EXACT FAILURE DATA:');
 //       console.log('Content-Type: application/x-www-form-urlencoded');
-//       console.log('POST URL:  http://localhost:4001/api/v1/payment/failure');
+//       console.log('POST URL:  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/failure');
 //       console.log('Form Data:');
 //       Object.keys(payuResponse).forEach(key => {
 //         if (payuResponse[key] !== undefined && payuResponse[key] !== null) {
@@ -1306,7 +1306,7 @@
 //         .filter(key => payuResponse[key] !== undefined && payuResponse[key] !== null)
 //         .map(key => `${key}=${encodeURIComponent(payuResponse[key])}`)
 //         .join('&');
-//       console.log(`curl -X POST  http://localhost:4001/api/v1/payment/failure \\`);
+//       console.log(`curl -X POST  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/failure \\`);
 //       console.log(`  -H "Content-Type: application/x-www-form-urlencoded" \\`);
 //       console.log(`  -d "${curlData}"`);
       
@@ -1648,7 +1648,7 @@ const cashfreeService = require('../services/cashfreeService'); // kept for Cash
 const gatewayResolver = require('../config/gatewayResolver');
 const gatewayCredentials = require('../utils/gatewayCredentials');
 const { isAppPlatformRequest } = require('../utils/platformRequest');
-const PaymentGatewayConfig = require('../models/PaymentGatewayConfig');
+const PaymentGatewayConfig = require('../models/PaymentGatewayconfig');
 const whatsappService = require('../services/whatsappService');
 const crypto = require('crypto');
 const axios = require('axios');
@@ -2682,7 +2682,7 @@ class PaymentController {
       
       console.log('\n📥 FOR POSTMAN TESTING - COPY THIS EXACT DATA:');
       console.log('Content-Type: application/x-www-form-urlencoded');
-      console.log('POST URL:  http://localhost:4001/api/v1/payment/success');
+      console.log('POST URL:  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/success');
       console.log('Form Data:');
       Object.keys(payuResponse).forEach(key => {
         if (payuResponse[key] !== undefined && payuResponse[key] !== null) {
@@ -2695,7 +2695,7 @@ class PaymentController {
         .filter(key => payuResponse[key] !== undefined && payuResponse[key] !== null)
         .map(key => `${key}=${encodeURIComponent(payuResponse[key])}`)
         .join('&');
-      console.log(`curl -X POST  http://localhost:4001/api/v1/payment/success \\`);
+      console.log(`curl -X POST  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/success \\`);
       console.log(`  -H "Content-Type: application/x-www-form-urlencoded" \\`);
       console.log(`  -d "${curlData}"`);
       
@@ -3020,7 +3020,7 @@ await saveCustomerLog({
       
       console.log('\n📥 FOR POSTMAN TESTING - COPY THIS EXACT FAILURE DATA:');
       console.log('Content-Type: application/x-www-form-urlencoded');
-      console.log('POST URL:  http://localhost:4001/api/v1/payment/failure');
+      console.log('POST URL:  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/failure');
       console.log('Form Data:');
       Object.keys(payuResponse).forEach(key => {
         if (payuResponse[key] !== undefined && payuResponse[key] !== null) {
@@ -3033,7 +3033,7 @@ await saveCustomerLog({
         .filter(key => payuResponse[key] !== undefined && payuResponse[key] !== null)
         .map(key => `${key}=${encodeURIComponent(payuResponse[key])}`)
         .join('&');
-      console.log(`curl -X POST  http://localhost:4001/api/v1/payment/failure \\`);
+      console.log(`curl -X POST  https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1/payment/failure \\`);
       console.log(`  -H "Content-Type: application/x-www-form-urlencoded" \\`);
       console.log(`  -d "${curlData}"`);
       

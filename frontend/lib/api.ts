@@ -1,4 +1,6 @@
 import { base_url } from '../environment.js'
+import { Capacitor } from '@capacitor/core'
+import appLogger, { getCorrelationIds } from './logger'
 
 // Types for API responses
 export interface SignupRequest {
@@ -288,6 +290,15 @@ const handle401Error = async (): Promise<boolean> => {
 
 // Custom fetch wrapper that handles 401 errors with automatic token refresh
 export const authenticatedFetch = async (url: string, options: RequestInit = {}, retryOn401: boolean = true): Promise<Response> => {
+  const start = performance.now()
+  const correlation = getCorrelationIds()
+  appLogger.api('API request started', {
+    sourceFile: 'api.ts',
+    sourceFunction: 'authenticatedFetch',
+    data: { url, method: options.method || 'GET' },
+    requestId: correlation.requestId,
+  })
+
   // Get current access token
   let accessToken = tokenManager.getAccessToken()
   
@@ -295,6 +306,9 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {},
   const headers = new Headers(options.headers)
   if (accessToken && !url.includes('/auth/')) {
     headers.set('Authorization', `Bearer ${accessToken}`)
+  }
+  if (typeof window !== 'undefined' && Capacitor.isNativePlatform()) {
+    headers.set('X-Platform', 'app')
   }
   
   const config: RequestInit = {
@@ -315,6 +329,9 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {},
       if (newAccessToken) {
         const retryHeaders = new Headers(options.headers)
         retryHeaders.set('Authorization', `Bearer ${newAccessToken}`)
+        if (typeof window !== 'undefined' && Capacitor.isNativePlatform()) {
+          retryHeaders.set('X-Platform', 'app')
+        }
         
         const retryConfig: RequestInit = {
           ...options,
@@ -330,7 +347,14 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {},
       }
     }
   }
-  
+
+  appLogger.api('API request completed', {
+    sourceFile: 'api.ts',
+    sourceFunction: 'authenticatedFetch',
+    data: { url, status: response.status, durationMs: Math.round(performance.now() - start) },
+    requestId: correlation.requestId,
+  })
+
   return response
 }
 
@@ -340,6 +364,13 @@ async function apiRequest<T>(
   options: RequestInit = {},
   retryOn401: boolean = true
 ): Promise<T | ApiError> {
+  const start = performance.now()
+  appLogger.api('API request started', {
+    sourceFile: 'api.ts',
+    sourceFunction: 'apiRequest',
+    data: { endpoint, method: options.method || 'GET' },
+  })
+
   try {
     const url = `${base_url}${endpoint}`
     
@@ -357,6 +388,10 @@ async function apiRequest<T>(
     const defaultHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+    }
+
+    if (typeof window !== 'undefined' && Capacitor.isNativePlatform()) {
+      defaultHeaders['X-Platform'] = 'app'
     }
 
     // Add authorization header if we have a token
@@ -429,6 +464,11 @@ async function apiRequest<T>(
 
     return data as T
   } catch (error) {
+    appLogger.network('API network error', {
+      sourceFile: 'api.ts',
+      sourceFunction: 'apiRequest',
+      data: { endpoint, durationMs: Math.round(performance.now() - start) },
+    })
     // API Request Error
     return {
       success: false,
@@ -550,7 +590,20 @@ export const authAPI = {
       method: 'POST',
       body: JSON.stringify({ refreshToken: refreshTokenValue }),
     })
-  }
+  },
+
+  async logout(): Promise<{ success: boolean; message?: string } | ApiError> {
+    const refreshToken = tokenManager.getRefreshToken()
+    const accessToken = tokenManager.getAccessToken()
+    if (!accessToken) {
+      return { success: true, message: 'Already logged out' }
+    }
+    return await apiRequest<{ success: boolean; message: string }>('/auth/logout', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ refreshToken: refreshToken || undefined }),
+    })
+  },
 }
 
 // Dashboard API functions
@@ -862,11 +915,29 @@ export interface PaymentData {
   pg: string
 }
 
-export interface Payment {
+export interface PayUPaymentPayload {
+  gateway: 'payu'
   paymentUrl: string
   paymentData: PaymentData
   message: string
 }
+
+export interface CashfreePaymentPayload {
+  gateway: 'cashfree'
+  paymentUrl: string
+  paymentData: {
+    payment_session_id: string
+    mode: string
+    txnid: string
+    amount?: string
+    platform?: string
+    /** @deprecated legacy field — use payment_session_id */
+    session_id?: string
+  }
+  message: string
+}
+
+export type Payment = PayUPaymentPayload | CashfreePaymentPayload | null
 
 export interface BookingResponse {
   success: boolean
@@ -874,7 +945,7 @@ export interface BookingResponse {
   data: {
     booking: Booking
     payment: Payment
-    paymentError: null | any
+    paymentError: null | string
   }
 }
 

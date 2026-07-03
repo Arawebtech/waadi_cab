@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { AlertCircle, Home, RefreshCw } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
+import journeyLogger from '@/lib/journeyLogger'
 
 export default function PaymentFailureContent() {
   const router = useRouter()
@@ -19,15 +20,29 @@ export default function PaymentFailureContent() {
   useEffect(() => {
     // Parse URL parameters manually to avoid hydration issues
     const urlParams = new URLSearchParams(window.location.search)
-    setTxnId(urlParams.get('txnid') || '')
-    setStatus(urlParams.get('status') || '')
-    setErrorCode(urlParams.get('error_code') || '')
-    setErrorMessage(urlParams.get('error') || '')
+    const txn = urlParams.get('txnid') || ''
+    const statusVal = urlParams.get('status') || ''
+    const errCode = urlParams.get('error_code') || ''
+    const errMsg = urlParams.get('error') || ''
+    const bookingIdVal = urlParams.get('bookingId') || ''
+
+    setTxnId(txn)
+    setStatus(statusVal)
+    setErrorCode(errCode)
+    setErrorMessage(errMsg)
+
+    journeyLogger.paymentFailure({
+      sourceFile: 'PaymentFailureContent.tsx',
+      sourceFunction: 'useEffect',
+      bookingId: bookingIdVal || undefined,
+      transactionId: txn || undefined,
+      data: { status: statusVal, errorCode: errCode, error: errMsg },
+    })
 
     // Show failure message
     toast({
       title: "Payment Failed",
-      description: urlParams.get('error') || "Your payment was not completed. Please try again.",
+      description: errMsg || "Your payment was not completed. Please try again.",
       variant: "destructive",
     })
   }, [toast])

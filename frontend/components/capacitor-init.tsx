@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { initializeCapacitor, registerPaymentDeepLinks } from '@/lib/capacitor';
 import { pushNotificationService } from '@/lib/push-notifications';
 import { useRouter } from 'next/navigation';
+import appLogger, { setCorrelationIds } from '@/lib/logger';
 
 export default function CapacitorInit() {
   const router = useRouter();
@@ -23,9 +24,20 @@ export default function CapacitorInit() {
       const status = params.get('status') || '';
       const amount = params.get('amount') || '';
       const bookingId = params.get('bookingId') || '';
+
+      setCorrelationIds({ transactionId: txnid, bookingId });
+      appLogger.mobile('Payment deep link received', {
+        sourceFile: 'capacitor-init.tsx',
+        sourceFunction: 'registerPaymentDeepLinks',
+        bookingId,
+        transactionId: txnid,
+        data: { path, status, amount },
+      });
       
       if (path === '/payment/success') {
-        router.replace(`/payment/success?txnid=${encodeURIComponent(txnid)}&status=${encodeURIComponent(status)}&amount=${encodeURIComponent(amount)}&bookingId=${encodeURIComponent(bookingId)}`);
+        router.replace(`/payment/success?txnid=${encodeURIComponent(txnid)}&status=${encodeURIComponent(status || 'success')}&amount=${encodeURIComponent(amount)}&bookingId=${encodeURIComponent(bookingId)}`);
+      } else if (path === '/payment/pending') {
+        router.replace(`/payment/pending?txnid=${encodeURIComponent(txnid)}&status=pending&amount=${encodeURIComponent(amount)}&bookingId=${encodeURIComponent(bookingId)}`);
       } else if (path === '/payment/failure') {
         const error = params.get('error') || 'Payment failed';
         router.replace(`/payment/failure?txnid=${encodeURIComponent(txnid)}&status=${encodeURIComponent(status)}&amount=${encodeURIComponent(amount)}&error=${encodeURIComponent(error)}`);
@@ -41,7 +53,10 @@ export default function CapacitorInit() {
       }
     });
 
-    // Log Capacitor initialization
+    appLogger.mobile('App launch — Capacitor initialized', {
+      sourceFile: 'capacitor-init.tsx',
+      sourceFunction: 'useEffect',
+    });
     console.log('🔌 Capacitor initialized with network connectivity monitoring');
   }, []);
 

@@ -14,6 +14,7 @@ import { Shield, ArrowLeft, Loader2, Smartphone, Clock, RefreshCw } from "lucide
 import { OTPInput } from "@/components/ui/otp-input"
 import Link from "next/link"
 import { pushNotificationService } from "@/lib/push-notifications"
+import journeyLogger from "@/lib/journeyLogger"
 
 interface VerificationData {
   phoneNumber: string
@@ -162,6 +163,15 @@ export default function OtpVerificationPage() {
 
       if (result.success) {
         setShowSuccessAnimation(true)
+
+        if (verificationData.purpose === 'login' && result.success && 'data' in result && result.data?.user) {
+          journeyLogger.userLogin({
+            sourceFile: 'otp-verification/page.tsx',
+            sourceFunction: 'verifyOtp',
+            userId: result.data.user._id || result.data.user.id,
+            data: { phoneNumber: verificationData.phoneNumber },
+          })
+        }
         
         toast({
           title: "Verification Successful!",

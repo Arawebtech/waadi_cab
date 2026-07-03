@@ -7,11 +7,12 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { CheckCircle, Download, Share2, Home, Loader2 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
+import journeyLogger from '@/lib/journeyLogger'
 
 export default function PaymentSuccessContent() {
   const router = useRouter()
   const { toast } = useToast()
-  
+
   const [isLoading, setIsLoading] = useState(true)
   const [paymentVerified, setPaymentVerified] = useState(false)
   const [bookingId, setBookingId] = useState('')
@@ -20,80 +21,78 @@ export default function PaymentSuccessContent() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Add a small delay to ensure URL is fully available
     const timer = setTimeout(() => {
       processPaymentSuccess()
     }, 200)
-    
+
     return () => clearTimeout(timer)
   }, [])
 
   const processPaymentSuccess = async () => {
     try {
-      console.log('Processing payment success from backend redirect...')
-      
-      // Parse URL parameters manually to avoid hydration issues
       const urlParams = new URLSearchParams(window.location.search)
-      const txnIdFromUrl = urlParams.get('txnid')
+      const txnIdFromUrl = urlParams.get('txnid') || urlParams.get('order_id')
       const status = urlParams.get('status')
       const amountFromUrl = urlParams.get('amount')
       const bookingIdFromUrl = urlParams.get('bookingId')
-
-      console.log('URL params from backend redirect:', { 
-        txnId: txnIdFromUrl, 
-        status, 
-        amount: amountFromUrl, 
-        bookingId: bookingIdFromUrl 
-      })
 
       if (!txnIdFromUrl) {
         throw new Error('Transaction ID not found')
       }
 
+      setTxnId(txnIdFromUrl)
+
       if (!status || status !== 'success') {
         throw new Error('Invalid payment status')
       }
-
-      if (!amountFromUrl) {
-        throw new Error('Payment amount not found')
+      if (!amountFromUrl || !bookingIdFromUrl) {
+        throw new Error('Payment details incomplete')
       }
 
-      if (!bookingIdFromUrl) {
-        throw new Error('Booking ID not found')
-      }
-
-      // Since we're coming from backend redirect, payment is already verified
-      // No need to call verify endpoint again - just display success
       setPaymentVerified(true)
       setBookingId(bookingIdFromUrl)
       setAmount(amountFromUrl)
-      setTxnId(txnIdFromUrl)
-      
-      // Clear any pending payment data since payment is complete
-      localStorage.removeItem('pendingPayment')
-      localStorage.removeItem('borderTaxFormData')
-      
-      toast({
-        title: "Payment Successful!",
-        description: "Your border tax pass has been booked successfully.",
+
+      journeyLogger.paymentSuccess({
+        sourceFile: 'PaymentSuccessContent.tsx',
+        sourceFunction: 'processPaymentSuccess',
+        bookingId: bookingIdFromUrl,
+        transactionId: txnIdFromUrl,
+        data: { amount: amountFromUrl, status },
+      })
+      journeyLogger.bookingConfirmed({
+        sourceFile: 'PaymentSuccessContent.tsx',
+        sourceFunction: 'processPaymentSuccess',
+        bookingId: bookingIdFromUrl,
+        transactionId: txnIdFromUrl,
+        data: { amount: amountFromUrl },
+      })
+      journeyLogger.bookingCompleted({
+        sourceFile: 'PaymentSuccessContent.tsx',
+        sourceFunction: 'processPaymentSuccess',
+        bookingId: bookingIdFromUrl,
+        transactionId: txnIdFromUrl,
+        data: { amount: amountFromUrl },
       })
 
+      localStorage.removeItem('pendingPayment')
+      localStorage.removeItem('borderTaxFormData')
+
+      toast({
+        title: 'Payment Successful!',
+        description: 'Your border tax pass has been booked successfully.',
+      })
     } catch (error) {
       console.error('Payment success processing error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unable to process payment success'
       setError(errorMessage)
       setPaymentVerified(false)
-      
+
       toast({
-        title: "Payment Processing Failed",
+        title: 'Payment Processing Failed',
         description: errorMessage,
-        variant: "destructive",
+        variant: 'destructive',
       })
-      
-      // Log additional debugging info
-      console.log('🔍 Debug info:')
-      console.log('- URL:', window.location.href)
-      
     } finally {
       setIsLoading(false)
     }
@@ -101,8 +100,8 @@ export default function PaymentSuccessContent() {
 
   const handleDownloadPass = () => {
     toast({
-      title: "Download Pass",
-      description: "Pass download feature will be available soon.",
+      title: 'Download Pass',
+      description: 'Pass download feature will be available soon.',
     })
   }
 
@@ -115,21 +114,20 @@ export default function PaymentSuccessContent() {
       })
     } else {
       toast({
-        title: "Share Pass",
-        description: "Share feature will be available soon.",
+        title: 'Share Pass',
+        description: 'Share feature will be available soon.',
       })
     }
   }
 
-  // Show loading while processing payment
   if (isLoading) {
     return (
       <MobileLayout title="Processing Payment" showBackButton={false}>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Processing Payment</h2>
-            <p className="text-gray-600">Please wait while we process your payment...</p>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Verifying Payment</h2>
+            <p className="text-gray-600">Please wait while we confirm your payment...</p>
           </div>
         </div>
       </MobileLayout>
@@ -153,11 +151,9 @@ export default function PaymentSuccessContent() {
     )
   }
 
-  // Main success content
   return (
     <MobileLayout title="Payment Successful" showBackButton={false}>
       <div className="px-4 py-8">
-        {/* Success Header */}
         <div className="text-center mb-8">
           <div className="bg-green-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="h-12 w-12 text-green-600" />
@@ -166,7 +162,6 @@ export default function PaymentSuccessContent() {
           <p className="text-gray-600">Your border tax pass has been booked successfully.</p>
         </div>
 
-        {/* Booking Details */}
         <Card className="mb-6">
           <CardContent className="p-6">
             <h2 className="text-lg font-semibold mb-4">Booking Details</h2>
@@ -187,7 +182,6 @@ export default function PaymentSuccessContent() {
           </CardContent>
         </Card>
 
-        {/* Action Buttons */}
         <div className="space-y-3">
           <Button onClick={handleDownloadPass} className="w-full" variant="outline">
             <Download className="h-4 w-4 mr-2" />

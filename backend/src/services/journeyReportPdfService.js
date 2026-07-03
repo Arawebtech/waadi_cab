@@ -1,12 +1,8 @@
 /**
  * Generates a professional PayU compliance PDF with complete, untruncated log details.
- * Uses manual line-by-line rendering to prevent PDFKit auto-overflow blank pages.
  */
 const PDFDocument = require('pdfkit');
 const { serializeValue } = require('./journeyReportService');
-
-const PAGE_MARGIN_TOP = 50;
-const PAGE_MARGIN_BOTTOM = 55;
 
 const COLORS = {
   primary: '#0f172a',
@@ -19,6 +15,8 @@ const COLORS = {
   danger: '#b91c1c',
   white: '#ffffff',
   rowAlt: '#f8fafc',
+  moduleHeader: '#1e40af',
+  detailsBg: '#f1f5f9',
 };
 
 function formatTs(value) {
@@ -63,6 +61,7 @@ function statusColor(status) {
   return COLORS.text;
 }
 
+/** Full JSON representation — no field omission or truncation. */
 function detailsToFullText(details) {
   try {
     return JSON.stringify(serializeValue(details), null, 2);
@@ -71,28 +70,11 @@ function detailsToFullText(details) {
   }
 }
 
-function getContentBottom(doc) {
-  return doc.page.height - PAGE_MARGIN_BOTTOM;
-}
-
-function syncDocY(doc, y) {
-  doc.y = y;
-  return y;
-}
-
 function drawPageFooter(doc, pageNum) {
-  const savedY = doc.y;
-  const savedBottomMargin = doc.page.margins.bottom;
-
-  // Footer sits in the bottom margin band — temporarily lift maxY so PDFKit won't auto addPage.
-  doc.page.margins.bottom = 0;
-
-  const footerY = doc.page.height - 38;
-  const ruleY = footerY - 8;
-
+  const bottom = doc.page.height - 40;
   doc
-    .moveTo(50, ruleY)
-    .lineTo(doc.page.width - 50, ruleY)
+    .moveTo(50, bottom - 8)
+    .lineTo(doc.page.width - 50, bottom - 8)
     .strokeColor(COLORS.border)
     .lineWidth(0.5)
     .stroke();
@@ -104,101 +86,24 @@ function drawPageFooter(doc, pageNum) {
     .text(
       'CONFIDENTIAL — Generated from live application logs. For PayU Compliance / Risk review only.',
       50,
-      footerY,
+      bottom,
       { align: 'center', width: doc.page.width - 100, lineBreak: false }
     );
 
-  doc.text(`Page ${pageNum}`, doc.page.width - 90, footerY, {
-    width: 40,
-    align: 'right',
-    lineBreak: false,
-  });
-
-  doc.page.margins.bottom = savedBottomMargin;
-  syncDocY(doc, savedY);
-}
-
-/** Add a new page only when the current Y cannot fit `needed` pixels of content. */
-function startNewPage(doc, pageNumRef) {
-  drawPageFooter(doc, pageNumRef.value);
-  doc.addPage({ margin: PAGE_MARGIN_TOP });
-  pageNumRef.value += 1;
-  return syncDocY(doc, PAGE_MARGIN_TOP);
-}
-
-/**
- * Ensure `y + needed` fits on the current page; return the Y to use (may be on a new page).
- * Never calls addPage unless content truly will not fit.
- */
-function ensureY(doc, y, needed, pageNumRef) {
-  const safeNeeded = Math.max(needed, 1);
-  if (y + safeNeeded <= getContentBottom(doc)) {
-    return syncDocY(doc, y);
-  }
-  startNewPage(doc, pageNumRef);
-  return PAGE_MARGIN_TOP;
-}
-
-function normalizeCursorY(doc, y, pageNumRef) {
-  const bottom = getContentBottom(doc);
-  if (y > bottom - 8 || y < PAGE_MARGIN_TOP) {
-    return ensureY(doc, PAGE_MARGIN_TOP, 1, pageNumRef);
-  }
-  return syncDocY(doc, y);
+  doc.text(`Page ${pageNum}`, doc.page.width - 90, bottom, { width: 40, align: 'right', lineBreak: false });
 }
 
 function ensureSpace(doc, needed, pageNumRef) {
-  let y = normalizeCursorY(doc, doc.y, pageNumRef);
-  y = ensureY(doc, y, needed, pageNumRef);
-  syncDocY(doc, y);
-}
-
-/**
- * Split text into visual lines that fit within `width` (respects existing newlines in JSON).
- */
-function splitIntoWrappedLines(doc, text, width) {
-  const lines = [];
-  const paragraphs = String(text).split('\n');
-
-  for (const paragraph of paragraphs) {
-    if (paragraph.length === 0) {
-      lines.push('');
-      continue;
-    }
-
-    let current = '';
-    for (let i = 0; i < paragraph.length; i += 1) {
-      const candidate = current + paragraph[i];
-      if (doc.widthOfString(candidate) <= width || current.length === 0) {
-        current = candidate;
-      } else {
-        lines.push(current);
-        current = paragraph[i];
-      }
-    }
-    if (current.length > 0) {
-      lines.push(current);
-    }
+  if (doc.y + needed > doc.page.height - 55) {
+    drawPageFooter(doc, pageNumRef.value);
+    doc.addPage({ margin: 50 });
+    pageNumRef.value += 1;
+    doc.y = 50;
   }
-
-  return lines;
-}
-
-function measureLineHeight(doc, lineGap) {
-  return doc.currentLineHeight(false) + (lineGap ?? 0);
 }
 
 /**
- * Render pre-wrapped or single-line text at absolute coordinates without PDFKit auto page breaks.
- */
-function drawAbsoluteText(doc, text, x, y, options = {}) {
-  doc.text(String(text), x, y, { lineBreak: false, ...options });
-  return y + measureLineHeight(doc, options.lineGap);
-}
-
-/**
- * Render text manually line-by-line with explicit page breaks.
- * Never uses PDFKit automatic overflow (no doc.text large block with flow).
+ * Draw multi-line / long JSON text with pdfkit auto-wrap and page breaks.
  */
 function drawWrappedText(doc, text, x, startY, width, options, pageNumRef) {
   const lineGap = options.lineGap ?? 2;
@@ -206,28 +111,22 @@ function drawWrappedText(doc, text, x, startY, width, options, pageNumRef) {
   const font = options.font ?? 'Courier';
   const color = options.color ?? COLORS.text;
 
+  ensureSpace(doc, 24, pageNumRef);
+
   doc.font(font).fontSize(fontSize).fillColor(color);
 
-  const lines = splitIntoWrappedLines(doc, text, width);
-  const lineStep = doc.currentLineHeight(false) + lineGap;
-  let y = startY;
+  doc.text(String(text), x, startY, {
+    width,
+    lineGap,
+    align: 'left',
+  });
 
-  for (const line of lines) {
-    y = ensureY(doc, y, lineStep, pageNumRef);
-    // Lines are pre-wrapped — do not pass width (avoids PDFKit re-flow pushing doc.y to page bottom).
-    doc.text(line.length > 0 ? line : ' ', x, y, { lineBreak: false });
-    y += lineStep;
-  }
-
-  return syncDocY(doc, y);
+  doc.moveDown(0.2);
 }
 
 function drawSummarySection(doc, summary, pageNumRef) {
-  ensureSpace(doc, 20, pageNumRef);
-  const titleY = doc.y;
-  doc.font('Helvetica-Bold').fontSize(13).fillColor(COLORS.primary);
-  drawAbsoluteText(doc, 'Transaction Summary', 50, titleY);
-  syncDocY(doc, titleY + 18);
+  doc.font('Helvetica-Bold').fontSize(13).fillColor(COLORS.primary).text('Transaction Summary', 50, doc.y);
+  doc.moveDown(0.5);
 
   const rows = [
     ['Application', summary.appFullName],
@@ -273,10 +172,7 @@ function drawSummarySection(doc, summary, pageNumRef) {
   for (let i = 0; i < rows.length; i += 1) {
     const [label, value] = rows[i];
     doc.font('Helvetica').fontSize(9);
-    const valueText = String(value || '—');
-    const valueLines = splitIntoWrappedLines(doc, valueText, contentWidth - valueX + 50);
-    const valueLineStep = measureLineHeight(doc, 1);
-    const valueHeight = valueLines.length * valueLineStep;
+    const valueHeight = doc.heightOfString(String(value || '—'), { width: contentWidth - valueX + 50 });
     const rowHeight = Math.max(18, valueHeight + 4);
 
     ensureSpace(doc, rowHeight + 2, pageNumRef);
@@ -286,20 +182,15 @@ function drawSummarySection(doc, summary, pageNumRef) {
       doc.rect(50, y - 1, contentWidth, rowHeight).fill(COLORS.rowAlt);
     }
 
-    doc.font('Helvetica-Bold').fontSize(9).fillColor(COLORS.muted);
-    drawAbsoluteText(doc, label, labelX, y + 2, { width: 155 });
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(COLORS.muted).text(label, labelX, y + 2, { width: 155 });
+    doc.font('Helvetica').fontSize(9).fillColor(COLORS.text).text(String(value || '—'), valueX, y + 2, {
+      width: contentWidth - valueX + 50,
+    });
 
-    doc.font('Helvetica').fontSize(9).fillColor(COLORS.text);
-    let valueY = y + 2;
-    for (const valueLine of valueLines) {
-      drawAbsoluteText(doc, valueLine, valueX, valueY);
-      valueY += valueLineStep;
-    }
-
-    syncDocY(doc, y + rowHeight);
+    doc.y = y + rowHeight;
   }
 
-  syncDocY(doc, doc.y + 6);
+  doc.moveDown(0.8);
 }
 
 function drawLogRecord(doc, record, stepNumber, pageNumRef) {
@@ -307,8 +198,6 @@ function drawLogRecord(doc, record, stepNumber, pageNumRef) {
   const padding = 10;
   const innerWidth = contentWidth - padding * 2;
   const x = 50 + padding;
-  const detailsWidth = contentWidth - 16;
-  const detailsX = 58;
 
   const status =
     record.details?.newState ||
@@ -321,30 +210,21 @@ function drawLogRecord(doc, record, stepNumber, pageNumRef) {
   const headerLine = `Step ${stepNumber}: ${record.title || record.eventName || 'Log Entry'}`;
   const metaLine = `Source: ${record.module || record.source || '—'}    |    Event: ${canonical}`;
   const idLine = `Record ID: ${record.id || '—'}`;
-  const tsLine = `Timestamp (IST): ${formatTs(record.timestamp)}    |    Status: ${status}`;
   const detailsText = detailsToFullText(record.details || {});
+
+  ensureSpace(doc, 50, pageNumRef);
+
+  const boxY = doc.y;
 
   doc.font('Helvetica-Bold').fontSize(9);
   const hHeader = doc.heightOfString(headerLine, { width: innerWidth });
   doc.font('Helvetica').fontSize(8);
   const hMeta = doc.heightOfString(metaLine, { width: innerWidth });
-  doc.font('Helvetica').fontSize(8);
-  const hTs = doc.heightOfString(tsLine, { width: innerWidth });
   doc.font('Helvetica').fontSize(7);
   const hId = doc.heightOfString(idLine, { width: innerWidth });
+  const hTs = doc.heightOfString(`Timestamp (IST): ${formatTs(record.timestamp)}`, { width: innerWidth });
 
   const headerBlockHeight = padding * 2 + hHeader + hMeta + hTs + hId + 8;
-
-  doc.font('Helvetica-Bold').fontSize(8);
-  const detailsLabelHeight = doc.heightOfString('Complete Log Details:', { width: contentWidth });
-
-  const detailLineGap = 1.5;
-  const separatorHeight = 8;
-
-  let y = normalizeCursorY(doc, doc.y, pageNumRef);
-  y = ensureY(doc, y, headerBlockHeight + 6, pageNumRef);
-
-  const boxY = y;
 
   doc
     .roundedRect(50, boxY, contentWidth, headerBlockHeight, 3)
@@ -353,49 +233,43 @@ function drawLogRecord(doc, record, stepNumber, pageNumRef) {
 
   let textY = boxY + padding;
 
-  doc.font('Helvetica-Bold').fontSize(9).fillColor(COLORS.primary);
-  drawAbsoluteText(doc, headerLine, x, textY, { width: innerWidth });
+  doc.font('Helvetica-Bold').fontSize(9).fillColor(COLORS.primary).text(headerLine, x, textY, { width: innerWidth });
   textY += hHeader + 3;
 
-  doc.font('Helvetica').fontSize(8).fillColor(COLORS.muted);
-  drawAbsoluteText(doc, metaLine, x, textY, { width: innerWidth });
+  doc.font('Helvetica').fontSize(8).fillColor(COLORS.muted).text(metaLine, x, textY, { width: innerWidth });
   textY += hMeta + 2;
 
   doc.font('Helvetica').fontSize(8).fillColor(COLORS.text);
-  drawAbsoluteText(doc, tsLine, x, textY, { width: innerWidth });
+  doc.text(`Timestamp (IST): ${formatTs(record.timestamp)}    |    Status: `, x, textY, { continued: true, width: innerWidth });
+  doc.fillColor(statusColor(status)).text(String(status), { continued: false });
   textY += hTs + 2;
 
-  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(7);
-  drawAbsoluteText(doc, idLine, x, textY, { width: innerWidth });
+  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(7).text(idLine, x, textY, { width: innerWidth });
 
-  y = boxY + headerBlockHeight + 6;
-  syncDocY(doc, y);
+  doc.y = boxY + headerBlockHeight + 6;
 
-  y = ensureY(doc, y, detailsLabelHeight + 4, pageNumRef);
+  ensureSpace(doc, 16, pageNumRef);
+  doc.font('Helvetica-Bold').fontSize(8).fillColor(COLORS.accent).text('Complete Log Details:', 50, doc.y);
+  doc.moveDown(0.3);
 
-  doc.font('Helvetica-Bold').fontSize(8).fillColor(COLORS.accent);
-  drawAbsoluteText(doc, 'Complete Log Details:', 50, y);
-  y += detailsLabelHeight + 4;
-
-  y = drawWrappedText(
+  drawWrappedText(
     doc,
     detailsText,
-    detailsX,
-    y,
-    detailsWidth,
-    { font: 'Courier', fontSize: 6.5, color: COLORS.text, lineGap: detailLineGap },
+    58,
+    doc.y,
+    contentWidth - 16,
+    { font: 'Courier', fontSize: 6.5, color: COLORS.text, lineGap: 1.5 },
     pageNumRef
   );
 
-  y = ensureY(doc, y, separatorHeight, pageNumRef);
+  doc.moveDown(0.3);
   doc
-    .moveTo(50, y)
-    .lineTo(50 + contentWidth, y)
+    .moveTo(50, doc.y)
+    .lineTo(50 + contentWidth, doc.y)
     .strokeColor(COLORS.border)
     .lineWidth(0.5)
     .stroke();
-
-  syncDocY(doc, y + separatorHeight);
+  doc.moveDown(0.7);
 }
 
 function drawChronologicalTimeline(doc, reportData, pageNumRef) {
@@ -404,29 +278,35 @@ function drawChronologicalTimeline(doc, reportData, pageNumRef) {
 
   ensureSpace(doc, 60, pageNumRef);
 
-  const sectionTitleY = doc.y;
-  doc.font('Helvetica-Bold').fontSize(13).fillColor(COLORS.primary);
-  drawAbsoluteText(doc, 'Chronological Journey Timeline', 50, sectionTitleY);
-  syncDocY(doc, sectionTitleY + 18);
+  doc
+    .font('Helvetica-Bold')
+    .fontSize(13)
+    .fillColor(COLORS.primary)
+    .text('Chronological Journey Timeline', 50, doc.y);
 
-  const introText =
-    `Events are sorted from earliest to latest by actual timestamp (IST). ` +
-    `${summary?.duplicatesRemoved ? `${summary.duplicatesRemoved} duplicate entries were merged; ` : ''}` +
-    `${records.length} unique journey step(s) shown with complete log payloads.`;
+  doc.moveDown(0.3);
 
-  doc.font('Helvetica').fontSize(8).fillColor(COLORS.muted);
-  const introWidth = doc.page.width - 100;
-  syncDocY(
-    doc,
-    drawWrappedText(doc, introText, 50, doc.y, introWidth, { font: 'Helvetica', fontSize: 8, color: COLORS.muted, lineGap: 1 }, pageNumRef) + 4
-  );
+  doc
+    .font('Helvetica')
+    .fontSize(8)
+    .fillColor(COLORS.muted)
+    .text(
+      `Events are sorted from earliest to latest by actual timestamp (IST). ` +
+        `${summary?.duplicatesRemoved ? `${summary.duplicatesRemoved} duplicate entries were merged; ` : ''}` +
+        `${records.length} unique journey step(s) shown with complete log payloads.`,
+      50,
+      doc.y,
+      { width: doc.page.width - 100 }
+    );
+
+  doc.moveDown(0.8);
 
   if (records.length === 0) {
-    ensureSpace(doc, 14, pageNumRef);
-    const emptyY = doc.y;
-    doc.font('Helvetica').fontSize(10).fillColor(COLORS.muted);
-    drawAbsoluteText(doc, 'No log records found in the database for the provided search criteria.', 50, emptyY);
-    syncDocY(doc, emptyY + 14);
+    doc
+      .font('Helvetica')
+      .fontSize(10)
+      .fillColor(COLORS.muted)
+      .text('No log records found in the database for the provided search criteria.', 50, doc.y);
     return;
   }
 
@@ -436,26 +316,18 @@ function drawChronologicalTimeline(doc, reportData, pageNumRef) {
   });
 
   if (moduleMeta?.omitted > 0) {
-    const noteText =
-      `Note: ${moduleMeta.omitted} log module(s) excluded from the 10-module limit: ` +
-      `${(moduleMeta.omittedNames || []).join(', ')}.`;
-    doc.font('Helvetica').fontSize(8);
-    const noteLines = splitIntoWrappedLines(doc, noteText, doc.page.width - 100);
-    const noteHeight = noteLines.length * measureLineHeight(doc, 1) + 4;
-    ensureSpace(doc, noteHeight, pageNumRef);
-
-    syncDocY(
-      doc,
-      drawWrappedText(
-        doc,
-        noteText,
+    ensureSpace(doc, 40, pageNumRef);
+    doc
+      .font('Helvetica')
+      .fontSize(8)
+      .fillColor(COLORS.warning)
+      .text(
+        `Note: ${moduleMeta.omitted} log module(s) excluded from the 10-module limit: ` +
+          `${(moduleMeta.omittedNames || []).join(', ')}.`,
         50,
         doc.y,
-        doc.page.width - 100,
-        { font: 'Helvetica', fontSize: 8, color: COLORS.warning, lineGap: 1 },
-        pageNumRef
-      )
-    );
+        { width: doc.page.width - 100 }
+      );
   }
 }
 
@@ -463,46 +335,11 @@ function drawLogsSection(doc, reportData, pageNumRef) {
   drawChronologicalTimeline(doc, reportData, pageNumRef);
 }
 
-function drawCertificationSection(doc, summary, pageNumRef) {
-  const certText =
-    `This report was automatically generated by ${summary.appFullName} using live stored log records ` +
-    `(${summary.totalEvents} unique events; ${summary.rawLogCount || summary.totalEvents} raw records fetched` +
-    `${summary.duplicatesRemoved ? `; ${summary.duplicatesRemoved} duplicates merged` : ''}). ` +
-    'Events appear in strict chronological order. All timestamps are IST. Complete payloads are included.';
-
-  doc.font('Helvetica').fontSize(8);
-  const certLines = splitIntoWrappedLines(doc, certText, doc.page.width - 100);
-  const certLineStep = measureLineHeight(doc, 1);
-  const certHeight = certLines.length * certLineStep;
-  const blockHeight = 18 + certHeight + 8;
-
-  ensureSpace(doc, blockHeight, pageNumRef);
-
-  const certTitleY = doc.y;
-  doc.font('Helvetica-Bold').fontSize(10).fillColor(COLORS.primary);
-  drawAbsoluteText(doc, 'Certification', 50, certTitleY);
-  syncDocY(doc, certTitleY + 16);
-
-  syncDocY(
-    doc,
-    drawWrappedText(
-      doc,
-      certText,
-      50,
-      doc.y,
-      doc.page.width - 100,
-      { font: 'Helvetica', fontSize: 8, color: COLORS.text, lineGap: 1 },
-      pageNumRef
-    )
-  );
-}
-
 function generateJourneyReportPdf(reportData) {
-  const { summary } = reportData;
+  const { summary, modules } = reportData;
   const doc = new PDFDocument({
     size: 'A4',
-    margins: { top: PAGE_MARGIN_TOP, bottom: PAGE_MARGIN_BOTTOM, left: 50, right: 50 },
-    autoFirstPage: true,
+    margins: { top: 50, bottom: 50, left: 50, right: 50 },
     bufferPages: false,
     info: {
       Title: `Customer Journey Report — ${summary.bookingId}`,
@@ -516,34 +353,45 @@ function generateJourneyReportPdf(reportData) {
 
   doc.rect(0, 0, doc.page.width, 110).fill(COLORS.primary);
 
-  doc.font('Helvetica-Bold').fontSize(22).fillColor(COLORS.white).text(summary.appName, 50, 32, { lineBreak: false });
-  doc.font('Helvetica').fontSize(11).fillColor('#94a3b8').text('Customer Journey Audit Report', 50, 60, { lineBreak: false });
-  doc.fontSize(9).fillColor('#cbd5e1').text('Prepared for PayU Compliance & Risk Review', 50, 78, { lineBreak: false });
-  doc.fontSize(8).text(`Generated: ${formatTs(summary.generatedAt)} (IST)`, 50, 92, { lineBreak: false });
+  doc.font('Helvetica-Bold').fontSize(22).fillColor(COLORS.white).text(summary.appName, 50, 32);
+  doc.font('Helvetica').fontSize(11).fillColor('#94a3b8').text('Customer Journey Audit Report', 50, 60);
+  doc.fontSize(9).fillColor('#cbd5e1').text('Prepared for PayU Compliance & Risk Review', 50, 78);
+  doc.fontSize(8).text(`Generated: ${formatTs(summary.generatedAt)} (IST)`, 50, 92);
 
-  syncDocY(doc, 130);
+  doc.y = 130;
 
-  doc.font('Helvetica-Bold').fontSize(14).fillColor(COLORS.accent);
-  const officialTitleY = doc.y;
-  drawAbsoluteText(doc, 'Official Transaction Evidence Report', 50, officialTitleY, {
-    align: 'center',
-    width: doc.page.width - 100,
-  });
-  syncDocY(doc, officialTitleY + 20);
+  doc
+    .font('Helvetica-Bold')
+    .fontSize(14)
+    .fillColor(COLORS.accent)
+    .text('Official Transaction Evidence Report', 50, doc.y, { align: 'center', width: doc.page.width - 100 });
+
+  doc.moveDown(1);
 
   drawSummarySection(doc, summary, pageNumRef);
   drawLogsSection(doc, reportData, pageNumRef);
-  drawCertificationSection(doc, summary, pageNumRef);
+
+  ensureSpace(doc, 50, pageNumRef);
+  doc.font('Helvetica-Bold').fontSize(10).fillColor(COLORS.primary).text('Certification', 50, doc.y);
+  doc.moveDown(0.3);
+
+  doc
+    .font('Helvetica')
+    .fontSize(8)
+    .fillColor(COLORS.text)
+    .text(
+      `This report was automatically generated by ${summary.appFullName} using live stored log records ` +
+        `(${summary.totalEvents} unique events; ${summary.rawLogCount || summary.totalEvents} raw records fetched` +
+        `${summary.duplicatesRemoved ? `; ${summary.duplicatesRemoved} duplicates merged` : ''}). ` +
+        'Events appear in strict chronological order. All timestamps are IST. Complete payloads are included.',
+      50,
+      doc.y,
+      { width: doc.page.width - 100, align: 'justify' }
+    );
 
   drawPageFooter(doc, pageNumRef.value);
 
   return doc;
 }
 
-module.exports = {
-  generateJourneyReportPdf,
-  formatTs,
-  detailsToFullText,
-  splitIntoWrappedLines,
-  ensureY,
-};
+module.exports = { generateJourneyReportPdf, formatTs, detailsToFullText };

@@ -5,6 +5,7 @@ import { Keyboard } from '@capacitor/keyboard';
 import { App } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { Network } from '@capacitor/network';
+import appLogger from './logger';
 
 /**
  * Check if the app is running on a native platform
@@ -39,6 +40,10 @@ export const initializeCapacitor = async () => {
     // Initialize network monitoring
     await initializeNetworkMonitoring();
 
+    appLogger.mobile('Capacitor plugins initialized', {
+      sourceFile: 'capacitor.ts',
+      sourceFunction: 'initializeCapacitor',
+    });
     console.log('Capacitor initialized successfully');
   } catch (error) {
     console.error('Error initializing Capacitor:', error);
@@ -58,6 +63,11 @@ export const initializeNetworkMonitoring = async () => {
 
     // Set up network status change listener
     await Network.addListener('networkStatusChange', (status) => {
+      appLogger.network(status.connected ? 'Network connection restored' : 'Network connection lost', {
+        sourceFile: 'capacitor.ts',
+        sourceFunction: 'initializeNetworkMonitoring',
+        data: { connected: status.connected, connectionType: status.connectionType },
+      });
       console.log('🌐 Network status changed:', status);
       
       // You can emit custom events here if needed
@@ -130,17 +140,23 @@ export const registerPaymentDeepLinks = (onNavigate: (path: string, params: URLS
       }
 
       if (routePath.startsWith('/payment/')) {
-        // Close in-app browser if open
         try { await Browser.close(); } catch {}
+        if (!parsed.searchParams.get('txnid') && parsed.searchParams.get('order_id')) {
+          parsed.searchParams.set('txnid', parsed.searchParams.get('order_id') || '');
+        }
         onNavigate(routePath, parsed.searchParams);
         return;
       }
 
-      // If only host is provided (e.g., wadicab://payment?status=success)
       if (host === 'payment') {
         try { await Browser.close(); } catch {}
         const status = (parsed.searchParams.get('status') || '').toLowerCase();
-        const fallbackPath = status === 'success' ? '/payment/success' : '/payment/failure';
+        const fallbackPath =
+          status === 'success'
+            ? '/payment/success'
+            : status === 'pending'
+              ? '/payment/pending'
+              : '/payment/failure';
         onNavigate(fallbackPath, parsed.searchParams);
       }
     } catch (e) {

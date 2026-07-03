@@ -22,14 +22,6 @@ allprojects {
         google()
         mavenCentral()
     }
-    
-    // Global Java version configuration
-    plugins.withType(JavaPlugin) {
-        java {
-            sourceCompatibility = JavaVersion.VERSION_17
-            targetCompatibility = JavaVersion.VERSION_17
-        }
-    }
 }
 
 task clean(type: Delete) {

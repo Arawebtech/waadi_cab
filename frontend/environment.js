@@ -1,7 +1,14 @@
-export const base_url = "https://api.waadi.in/api/v1"
+function normalizeApiBaseUrl(raw) {
+  const fallback = 'https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1'
+  const trimmed = (raw || fallback).trim().replace(/\/+$/, '')
+  if (trimmed.endsWith('/api/v1')) return trimmed
+  return `${trimmed}/api/v1`
+}
+
+export const base_url = normalizeApiBaseUrl(process.env.NEXT_PUBLIC_API_URL)
 
 // Frontend URL configuration
-export const frontend_url = process.env.NEXT_PUBLIC_FRONTEND_URL || "http://localhost"
+export const frontend_url = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://mdk7v2f6-3000.inc1.devtunnels.ms"
 
 // PayU Payment Gateway Configuration
 export const payuConfig = {
@@ -11,6 +18,12 @@ export const payuConfig = {
   baseUrl: process.env.NEXT_PUBLIC_PAYU_ENVIRONMENT === "production" 
     ? "https://secure.payu.in/_payment"
     : "https://secure.payu.in/_payment"
+}
+
+// Cashfree Payment Gateway Configuration
+export const cashfreeConfig = {
+  environment: process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT || "production",
+  isProduction: (process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT || "production") === "production",
 }
 // IMPORTANT: For local development, you need a tunnel (like ngrok) to make PayU callbacks accessible
 // The success/failure URLs must be publicly accessible for PayU to redirect users back

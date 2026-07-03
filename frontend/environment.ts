@@ -1,8 +1,15 @@
-// API base URL (frontend and payment code must use the same endpoint)
-export const base_url = process.env.NEXT_PUBLIC_API_URL || "https://api.waadi.in/api/v1"
+// API base URL — always normalize to .../api/v1 (Capacitor build bakes NEXT_PUBLIC_* at compile time)
+function normalizeApiBaseUrl(raw?: string): string {
+  const fallback = 'https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1'
+  const trimmed = (raw || fallback).trim().replace(/\/+$/, '')
+  if (trimmed.endsWith('/api/v1')) return trimmed
+  return `${trimmed}/api/v1`
+}
+
+export const base_url = normalizeApiBaseUrl(process.env.NEXT_PUBLIC_API_URL)
 
 // Frontend URL configuration
-export const frontend_url = process.env.NEXT_PUBLIC_FRONTEND_URL || "http://localhost"
+export const frontend_url = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://mdk7v2f6-3000.inc1.devtunnels.ms"
 
 // PayU Payment Gateway Configuration
 export const payuConfig = {
@@ -12,6 +19,12 @@ export const payuConfig = {
   baseUrl: process.env.NEXT_PUBLIC_PAYU_ENVIRONMENT === "production" 
     ? "https://secure.payu.in/_payment"
     : "https://secure.payu.in/_payment"
+}
+
+// Cashfree — browser checkout only (no WebView SDK)
+export const cashfreeConfig = {
+  environment: (process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT || "production") as "sandbox" | "production",
+  isProduction: (process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT || "production") === "production",
 }
 
 // Environment file loaded

@@ -133,7 +133,7 @@ export default function HistoryPage() {
     try {
       setDownloadingPdfs(prev => new Set(prev).add(booking._id));
       
-      const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL || 'https://api.waadi.in'}/api/v1/bookings/${booking._id}/pdf`;
+      const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001'}/api/v1/bookings/${booking._id}/pdf`;
       const filename = getPdfFilename(booking);
       
       await downloadPdf({

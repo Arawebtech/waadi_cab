@@ -163,7 +163,7 @@ export default function DashboardPage() {
         bookingId: activity.bookingId,
         tax_slip_pdf: activity.tax_slip_pdf
       })
-      const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL || 'https://api.waadi.in'}/api/v1/bookings/${activity.id}/pdf`
+      const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001'}/api/v1/bookings/${activity.id}/pdf`
       await downloadPdf({ url: pdfUrl, filename })
       
       toast({

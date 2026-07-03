@@ -36,7 +36,7 @@ export const testConnectivity = async (): Promise<{
   const testUrls = [
     'https://www.google.com',
     'https://www.cloudflare.com',
-    'https://api.waadi.in',
+    'http://localhost:4001',
   ];
 
   const startTime = Date.now();

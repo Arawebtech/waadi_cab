@@ -10,7 +10,7 @@ class CashfreeService {
     this.environment = (process.env.CASHFREE_ENVIRONMENT || 'sandbox').trim().toLowerCase();
     this.webhookSecret = process.env.CASHFREE_WEBHOOK_SECRET || '';
 
-    const apiBase = (process.env.API_BASE_URL || process.env.BACKEND_URL || 'http://localhost:4001')
+    const apiBase = (process.env.API_BASE_URL || process.env.BACKEND_URL || 'https://mdk7v2f6-4001.inc1.devtunnels.ms')
       .trim()
       .replace(/\/+$/, '');
 

@@ -2,15 +2,16 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { tokenManager, setGlobalLogoutHandler } from '@/lib/api'
+import { tokenManager, setGlobalLogoutHandler, authAPI } from '@/lib/api'
 import { AuthLoading } from './auth-loading'
 import { useToast } from '@/components/ui/use-toast'
+import journeyLogger from '@/lib/journeyLogger'
 
 interface AuthContextType {
   isAuthenticated: boolean
   isLoading: boolean
   user: any | null
-  logout: () => void
+  logout: () => void | Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -112,8 +113,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
 
-  const logout = (showToast: boolean = true) => {
+  const logout = async (showToast: boolean = true) => {
     console.log('🚪 Logout initiated')
+    const userId = tokenManager.getUserData()?._id
+
+    try {
+      await authAPI.logout()
+    } catch {
+      // Continue local logout even if API fails
+    }
+
+    journeyLogger.userLogout({
+      sourceFile: 'auth-provider.tsx',
+      sourceFunction: 'logout',
+      userId,
+    })
+
     tokenManager.clearTokens()
     setIsAuthenticated(false)
     setUser(null)

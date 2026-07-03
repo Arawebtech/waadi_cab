@@ -15,6 +15,7 @@ import { BorderTaxMaintenance } from "@/components/border-tax-maintenance"
 import { ArrowLeft, Loader2, CheckCircle } from "lucide-react"
 import PaymentIntegration from "@/components/payment-integration"
 import { useAuth } from "@/components/auth-provider"
+import journeyLogger from "@/lib/journeyLogger"
 
 export default function BorderTaxPage() {
   const router = useRouter()
@@ -86,6 +87,22 @@ export default function BorderTaxPage() {
     email: "",
     phone: ""
   })
+
+  useEffect(() => {
+    if (showPayment) {
+      journeyLogger.checkoutOpened({
+        sourceFile: 'border-tax/page.tsx',
+        sourceFunction: 'useEffect showPayment',
+        userId: user?._id,
+        data: {
+          amount: totalAmount,
+          vehicleNumber: formData.vehicleNumber,
+          visitingState: formData.visitingStateName,
+          planType: formData.planType,
+        },
+      })
+    }
+  }, [showPayment])
 
   // Search functionality
   const [searchPaymentReference, setSearchPaymentReference] = useState("")
@@ -1143,6 +1160,28 @@ export default function BorderTaxPage() {
       lastName: "Name", 
       email: `${formData.whatsappNumber}@${formData.vehicleNumber}`,
       phone: formData.whatsappNumber
+    })
+
+    journeyLogger.productSelected({
+      sourceFile: 'border-tax/page.tsx',
+      sourceFunction: 'handleSubmit',
+      userId: user?._id,
+      data: {
+        visitingState: formData.visitingStateName,
+        vehicleNumber: formData.vehicleNumber,
+        vehicleType: formData.vehicleTypeName,
+        planType: formData.planType,
+        amount: totalAmount,
+        fromDate: formData.fromDate,
+        uptoDate: formData.uptoDate,
+      },
+    })
+
+    journeyLogger.checkoutSubmitted({
+      sourceFile: 'border-tax/page.tsx',
+      sourceFunction: 'handleSubmit',
+      userId: user?._id,
+      data: { amount: totalAmount },
     })
 
     // Show payment component
