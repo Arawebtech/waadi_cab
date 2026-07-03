@@ -1,0 +1,45 @@
+{
+	"appId": "com.MP.Waadi_App",
+	"appName": "Waadi Cab",
+	"webDir": "out",
+	"server": {
+		"androidScheme": "https",
+		"hostname": "http://31.97.229.97:3000"
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 2000,
+			"backgroundColor": "#ffffff",
+			"showSpinner": true,
+			"spinnerColor": "#3b82f6"
+		},
+		"StatusBar": {
+			"style": "dark",
+			"backgroundColor": "#ffffff",
+			"overlaysWebView": false
+		},
+		"CapacitorUpdater": {
+			"autoUpdate": false,
+			"updateUrl": "https://api.waadi.in/api/v1/app-version/check"
+		}
+	},
+	"android": {
+		"backgroundColor": "#ffffff",
+		"allowMixedContent": true
+	},
+	"packageClassList": [
+		"FCMPlugin",
+		"FirebaseMessagingPlugin",
+		"AppPlugin",
+		"CAPBrowserPlugin",
+		"CAPCameraPlugin",
+		"FilesystemPlugin",
+		"KeyboardPlugin",
+		"CAPNetworkPlugin",
+		"PushNotificationsPlugin",
+		"SharePlugin",
+		"SplashScreenPlugin",
+		"StatusBarPlugin",
+		"CapacitorUpdaterPlugin"
+	]
+}

@@ -1,0 +1,74 @@
+com.MP.Waadi_App.app-startup-runtime-1.1.1-0 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\0577cda7cc12ab45d61e09f12ff954ac\transformed\startup-runtime-1.1.1\res
+com.MP.Waadi_App.app-core-common-2.0.3-1 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\06e02a3015ec976aa52c87644f770518\transformed\core-common-2.0.3\res
+com.MP.Waadi_App.app-constraintlayout-2.0.1-2 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\0802d5d1240d242ee9896da4a01a1437\transformed\constraintlayout-2.0.1\res
+com.MP.Waadi_App.app-emoji2-1.3.0-3 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\08dbffe77aa2a0e96dcce3fced1ac761\transformed\emoji2-1.3.0\res
+com.MP.Waadi_App.app-room-runtime-2.6.1-4 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\0eeb96a9912881ad692a65af7013fc23\transformed\room-runtime-2.6.1\res
+com.MP.Waadi_App.app-cardview-1.0.0-5 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\14fbd378f154788fa30131c37c5db296\transformed\cardview-1.0.0\res
+com.MP.Waadi_App.app-tracing-ktx-1.2.0-6 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\1c0e71942be26a52978f9f2749beba9e\transformed\tracing-ktx-1.2.0\res
+com.MP.Waadi_App.app-lifecycle-livedata-core-ktx-2.10.0-7 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\1e9f062f24526abf42cfee30d1635232\transformed\lifecycle-livedata-core-ktx-2.10.0\res
+com.MP.Waadi_App.app-lifecycle-runtime-8 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\22d8afbb92edee29922575b6d0534212\transformed\lifecycle-runtime\res
+com.MP.Waadi_App.app-core-1.15.0-9 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\297c0c7ea9d3319068d50d77d2ac7f1c\transformed\core-1.15.0\res
+com.MP.Waadi_App.app-play-services-base-18.1.0-10 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\304d8b5b85acc0534c067b8cd7bf6cc6\transformed\play-services-base-18.1.0\res
+com.MP.Waadi_App.app-lifecycle-livedata-2.10.0-11 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\3150f4744767da50c2de02e5de78ac62\transformed\lifecycle-livedata-2.10.0\res
+com.MP.Waadi_App.app-core-runtime-2.2.0-12 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\340c7b0cce6658829b692d26338b3ca2\transformed\core-runtime-2.2.0\res
+com.MP.Waadi_App.app-core-ktx-1.15.0-13 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\368f38dbe5c1369882e10ee5039fc945\transformed\core-ktx-1.15.0\res
+com.MP.Waadi_App.app-tracing-1.2.0-14 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\36aaf7f04f1b13c343773a503f2165d3\transformed\tracing-1.2.0\res
+com.MP.Waadi_App.app-firebase-common-22.0.1-15 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\3cf6743663bda3e9ffcdfd88acc9c1d8\transformed\firebase-common-22.0.1\res
+com.MP.Waadi_App.app-core-viewtree-1.0.0-16 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\3e056aee8331bdbe00f192e4c43cfec5\transformed\core-viewtree-1.0.0\res
+com.MP.Waadi_App.app-datastore-preferences-core-release-17 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\40217b02907ea2c48592d30247b59fcc\transformed\datastore-preferences-core-release\res
+com.MP.Waadi_App.app-activity-ktx-1.9.3-18 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\4cf6148fbd9f42f9e62efb62347395be\transformed\activity-ktx-1.9.3\res
+com.MP.Waadi_App.app-lifecycle-livedata-core-2.10.0-19 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\4d90a21bae1b3cf5c4f3af932ad34a8e\transformed\lifecycle-livedata-core-2.10.0\res
+com.MP.Waadi_App.app-browser-1.8.0-20 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\5e5d46ecf4f17b5d1808cb4893bec3b3\transformed\browser-1.8.0\res
+com.MP.Waadi_App.app-emoji2-views-helper-1.3.0-21 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\5e639d95301c07ceda28f4496aedc080\transformed\emoji2-views-helper-1.3.0\res
+com.MP.Waadi_App.app-room-ktx-2.6.1-22 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\600808184d1c8bc49e6e2059c0219df1\transformed\room-ktx-2.6.1\res
+com.MP.Waadi_App.app-coordinatorlayout-1.2.0-23 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\65d2f4262d190fd224d28dad253df3e5\transformed\coordinatorlayout-1.2.0\res
+com.MP.Waadi_App.app-lifecycle-viewmodel-24 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\65f437904ee1e30c50a58fa103460073\transformed\lifecycle-viewmodel\res
+com.MP.Waadi_App.app-activity-1.9.3-25 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\72262f2dc4ee88ef7d55dd1f2238fc36\transformed\activity-1.9.3\res
+com.MP.Waadi_App.app-fragment-1.8.4-26 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\77e437cb27744d7a7806b78a7e818377\transformed\fragment-1.8.4\res
+com.MP.Waadi_App.app-datastore-core-release-27 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\85221d6ec6a443568e797188579309ef\transformed\datastore-core-release\res
+com.MP.Waadi_App.app-sqlite-framework-2.4.0-28 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\902836fbff1568c0403ddf5a14bebe6e\transformed\sqlite-framework-2.4.0\res
+com.MP.Waadi_App.app-transition-1.5.0-29 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\90b5e770508ab751fca7fb455c479248\transformed\transition-1.5.0\res
+com.MP.Waadi_App.app-profileinstaller-1.4.0-30 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\9e0499aa059ddb4d5cdc5c795c9aff73\transformed\profileinstaller-1.4.0\res
+com.MP.Waadi_App.app-viewpager2-1.0.0-31 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\a004c607d1003c11822d8540ff008548\transformed\viewpager2-1.0.0\res
+com.MP.Waadi_App.app-recyclerview-1.1.0-32 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\a068740549d3a9e22c18f4dff22986a2\transformed\recyclerview-1.1.0\res
+com.MP.Waadi_App.app-appcompat-resources-1.7.0-33 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\aa40844c7d8897710408503037545093\transformed\appcompat-resources-1.7.0\res
+com.MP.Waadi_App.app-core-splashscreen-1.0.1-34 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\b7792830aa39e3ba0ea49bc9557b8575\transformed\core-splashscreen-1.0.1\res
+com.MP.Waadi_App.app-webkit-1.12.1-35 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\b987d92e5c5b5398fba551eaa6e4aad6\transformed\webkit-1.12.1\res
+com.MP.Waadi_App.app-lifecycle-viewmodel-ktx-2.10.0-36 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\b9be75f69728215d4b839118c9eaff8d\transformed\lifecycle-viewmodel-ktx-2.10.0\res
+com.MP.Waadi_App.app-lifecycle-process-2.10.0-37 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\bb0ed93d8363c8826b8adf5c59dd2166\transformed\lifecycle-process-2.10.0\res
+com.MP.Waadi_App.app-firebase-messaging-25.0.1-38 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\c352e817923a19a12ecfc40b9f7ec743\transformed\firebase-messaging-25.0.1\res
+com.MP.Waadi_App.app-datastore-release-39 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\c74df8db1d6644af8663f1e54cb5885c\transformed\datastore-release\res
+com.MP.Waadi_App.app-sqlite-2.4.0-40 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\d3a44a48f51dd30885bfbbe59465be66\transformed\sqlite-2.4.0\res
+com.MP.Waadi_App.app-lifecycle-service-2.10.0-41 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\d74aeb54aa9e2b0f2b16c74a7f916fca\transformed\lifecycle-service-2.10.0\res
+com.MP.Waadi_App.app-drawerlayout-1.1.1-42 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\dd1b83f2b3399ba4af6ea920dbd306a3\transformed\drawerlayout-1.1.1\res
+com.MP.Waadi_App.app-play-services-basement-18.10.0-43 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\e1eacd8493f2603ad279c7375e7bb754\transformed\play-services-basement-18.10.0\res
+com.MP.Waadi_App.app-savedstate-44 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\e44758e08edd31a7be782cc2a1b61684\transformed\savedstate\res
+com.MP.Waadi_App.app-material-1.12.0-45 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\e66c2ea4068d6eb5e7e34f468c7089f1\transformed\material-1.12.0\res
+com.MP.Waadi_App.app-savedstate-ktx-1.4.0-46 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\e67ba9d3c81cda224496eec40a5bb90e\transformed\savedstate-ktx-1.4.0\res
+com.MP.Waadi_App.app-work-runtime-2.10.5-47 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\ee20ed207b36331ba00443fdafe83f37\transformed\work-runtime-2.10.5\res
+com.MP.Waadi_App.app-annotation-experimental-1.4.1-48 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\f94fbe9291b18389622d686b23659d9b\transformed\annotation-experimental-1.4.1\res
+com.MP.Waadi_App.app-appcompat-1.7.0-49 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\fa08c23cd0dba1dcd318cbaa01ea7c2b\transformed\appcompat-1.7.0\res
+com.MP.Waadi_App.app-datastore-preferences-release-50 C:\Users\mdsrk\.gradle\caches\8.11.1\transforms\fbe548112c1d75717609523de58f5f06\transformed\datastore-preferences-release\res
+com.MP.Waadi_App.app-pngs-51 C:\Users\mdsrk\Desktop\ON Going Projects\wadi_cab-main\frontend\android\app\build\generated\res\pngs\debug
+com.MP.Waadi_App.app-res-52 C:\Users\mdsrk\Desktop\ON Going Projects\wadi_cab-main\frontend\android\app\build\generated\res\processDebugGoogleServices
+com.MP.Waadi_App.app-resValues-53 C:\Users\mdsrk\Desktop\ON Going Projects\wadi_cab-main\frontend\android\app\build\generated\res\resValues\debug
+com.MP.Waadi_App.app-packageDebugResources-54 C:\Users\mdsrk\Desktop\ON Going Projects\wadi_cab-main\frontend\android\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
+com.MP.Waadi_App.app-packageDebugResources-55 C:\Users\mdsrk\Desktop\ON Going Projects\wadi_cab-main\frontend\android\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
+com.MP.Waadi_App.app-debug-56 C:\Users\mdsrk\Desktop\ON Going Projects\wadi_cab-main\frontend\android\app\build\intermediates\merged_res\debug\mergeDebugResources
+com.MP.Waadi_App.app-debug-57 C:\Users\mdsrk\Desktop\ON Going Projects\wadi_cab-main\frontend\android\app\src\debug\res
+com.MP.Waadi_App.app-main-58 C:\Users\mdsrk\Desktop\ON Going Projects\wadi_cab-main\frontend\android\app\src\main\res
+com.MP.Waadi_App.app-debug-59 C:\Users\mdsrk\Desktop\ON Going Projects\wadi_cab-main\frontend\android\capacitor-cordova-android-plugins\build\intermediates\packaged_res\debug\packageDebugResources
+com.MP.Waadi_App.app-debug-60 C:\Users\mdsrk\Desktop\ON Going Projects\wadi_cab-main\frontend\node_modules\@capacitor-community\fcm\android\build\intermediates\packaged_res\debug\packageDebugResources
+com.MP.Waadi_App.app-debug-61 C:\Users\mdsrk\Desktop\ON Going Projects\wadi_cab-main\frontend\node_modules\@capacitor-firebase\messaging\android\build\intermediates\packaged_res\debug\packageDebugResources
+com.MP.Waadi_App.app-debug-62 C:\Users\mdsrk\Desktop\ON Going Projects\wadi_cab-main\frontend\node_modules\@capacitor\android\capacitor\build\intermediates\packaged_res\debug\packageDebugResources
+com.MP.Waadi_App.app-debug-63 C:\Users\mdsrk\Desktop\ON Going Projects\wadi_cab-main\frontend\node_modules\@capacitor\app\android\build\intermediates\packaged_res\debug\packageDebugResources
+com.MP.Waadi_App.app-debug-64 C:\Users\mdsrk\Desktop\ON Going Projects\wadi_cab-main\frontend\node_modules\@capacitor\browser\android\build\intermediates\packaged_res\debug\packageDebugResources
+com.MP.Waadi_App.app-debug-65 C:\Users\mdsrk\Desktop\ON Going Projects\wadi_cab-main\frontend\node_modules\@capacitor\camera\android\build\intermediates\packaged_res\debug\packageDebugResources
+com.MP.Waadi_App.app-debug-66 C:\Users\mdsrk\Desktop\ON Going Projects\wadi_cab-main\frontend\node_modules\@capacitor\filesystem\android\build\intermediates\packaged_res\debug\packageDebugResources
+com.MP.Waadi_App.app-debug-67 C:\Users\mdsrk\Desktop\ON Going Projects\wadi_cab-main\frontend\node_modules\@capacitor\keyboard\android\build\intermediates\packaged_res\debug\packageDebugResources
+com.MP.Waadi_App.app-debug-68 C:\Users\mdsrk\Desktop\ON Going Projects\wadi_cab-main\frontend\node_modules\@capacitor\network\android\build\intermediates\packaged_res\debug\packageDebugResources
+com.MP.Waadi_App.app-debug-69 C:\Users\mdsrk\Desktop\ON Going Projects\wadi_cab-main\frontend\node_modules\@capacitor\push-notifications\android\build\intermediates\packaged_res\debug\packageDebugResources
+com.MP.Waadi_App.app-debug-70 C:\Users\mdsrk\Desktop\ON Going Projects\wadi_cab-main\frontend\node_modules\@capacitor\share\android\build\intermediates\packaged_res\debug\packageDebugResources
+com.MP.Waadi_App.app-debug-71 C:\Users\mdsrk\Desktop\ON Going Projects\wadi_cab-main\frontend\node_modules\@capacitor\splash-screen\android\build\intermediates\packaged_res\debug\packageDebugResources
+com.MP.Waadi_App.app-debug-72 C:\Users\mdsrk\Desktop\ON Going Projects\wadi_cab-main\frontend\node_modules\@capacitor\status-bar\android\build\intermediates\packaged_res\debug\packageDebugResources
+com.MP.Waadi_App.app-debug-73 C:\Users\mdsrk\Desktop\ON Going Projects\wadi_cab-main\frontend\node_modules\@capgo\capacitor-updater\android\build\intermediates\packaged_res\debug\packageDebugResources
