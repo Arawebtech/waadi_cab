@@ -121,7 +121,7 @@ graph TD
 MONGODB_URI=mongodb://localhost:27017/wadi_cab
 
 # Frontend
-NEXT_PUBLIC_API_URL=https://api.waadi.in/api/v1
+NEXT_PUBLIC_API_URL=http://localhost:4001/api/v1
 ```
 
 ### Package.json Version

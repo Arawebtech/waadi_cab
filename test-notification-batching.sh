@@ -14,7 +14,7 @@ echo -e "\n${BLUE}Testing Notification Batching for Large User Base${NC}"
 
 # Test 1: Check current user count with FCM tokens
 echo -e "\n${YELLOW}1. Checking User Count with FCM Tokens${NC}"
-user_count_response=$(curl -s "https://api.waadi.in/api/v1/admin/users?limit=1")
+user_count_response=$(curl -s "http://localhost:4001/api/v1/admin/users?limit=1")
 user_count=$(echo "$user_count_response" | jq -r '.pagination.total // 0')
 
 echo "   Total users in system: $user_count"
@@ -23,7 +23,7 @@ echo "   Total users in system: $user_count"
 echo -e "\n${YELLOW}2. Testing Notification Endpoint${NC}"
 echo "   Sending test notification to all users..."
 
-notification_response=$(curl -s -X POST "https://api.waadi.in/api/v1/push/send-to-all" \
+notification_response=$(curl -s -X POST "http://localhost:4001/api/v1/push/send-to-all" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "🎉 System Update",
@@ -82,7 +82,7 @@ echo -e "\n${YELLOW}3. Testing Different Notification Types${NC}"
 
 # Test maintenance notification
 echo "   Testing maintenance notification..."
-maintenance_response=$(curl -s -X POST "https://api.waadi.in/api/v1/push/send-to-all" \
+maintenance_response=$(curl -s -X POST "http://localhost:4001/api/v1/push/send-to-all" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "🔧 Maintenance Alert",
@@ -106,7 +106,7 @@ echo -e "\n${YELLOW}4. Performance Test${NC}"
 echo "   Measuring response time for notification sending..."
 
 start_time=$(date +%s%N)
-performance_response=$(curl -s -X POST "https://api.waadi.in/api/v1/push/send-to-all" \
+performance_response=$(curl -s -X POST "http://localhost:4001/api/v1/push/send-to-all" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "⚡ Performance Test",
@@ -132,7 +132,7 @@ fi
 
 # Test 5: Check notification service status
 echo -e "\n${YELLOW}5. Checking Notification Service Status${NC}"
-service_response=$(curl -s "https://api.waadi.in/api/v1/push/test")
+service_response=$(curl -s "http://localhost:4001/api/v1/push/test")
 service_success=$(echo "$service_response" | jq -r '.success // false')
 
 if [ "$service_success" = "true" ]; then
