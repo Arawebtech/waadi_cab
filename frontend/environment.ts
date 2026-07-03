@@ -9,7 +9,7 @@ function normalizeApiBaseUrl(raw?: string): string {
 export const base_url = normalizeApiBaseUrl(process.env.NEXT_PUBLIC_API_URL)
 
 // Frontend URL configuration
-export const frontend_url = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://mdk7v2f6-3000.inc1.devtunnels.ms"
+export const frontend_url = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://book.waadi.in"
 
 // PayU Payment Gateway Configuration
 export const payuConfig = {
