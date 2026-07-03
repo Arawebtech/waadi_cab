@@ -28,26 +28,68 @@ const versionTrackingRoutes = require('./src/routes/versionTrackingRoutes');
 const validationRoutes = require('./src/routes/validationRoutes');
 const cashfreeRoutes      = require('./src/routes/cashfreeRoutes');
 const gatewayAdminRoutes  = require('./src/routes/gatewayAdminRoutes');
+const logRoutes           = require('./src/routes/logRoutes');
  
 const whatsappService = require('./src/services/whatsappService');
 
 // Import middleware
 const errorHandler = require('./src/middleware/errorHandler');
 const notFound = require('./src/middleware/notFound');
+const correlationId = require('./src/middleware/correlationId');
+const requestLogger = require('./src/middleware/requestLogger');
 const { checkMaintenanceMode } = require('./src/middleware/maintenanceCheck');
 
 const app = express();
 const server = createServer(app);
+
+
+const allowedOrigins = [
+ "https://localhost",
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:3001",
+  "http://127.0.0.1:3002",
+
+  "http://192.168.1.8:3001",
+  "http://192.168.1.36:3000",
+
+  "http://31.97.229.97:3001",
+  "http://31.97.229.97:3000",
+
+  "https://book.waadi.in",
+  "https://admin.waadi.in",
+  "https://api.waadi.in",
+
+  "capacitor://localhost",
+
+  "https://mdk7v2f6-3000.inc1.devtunnels.ms"
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // allow server-to-server / mobile apps (no origin)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+return callback(new Error("Not allowed by CORS: " + origin));
+    },
+    credentials: true
+  })
+);
+
+
 const io = new Server(server, {
-    cors: {
-      origin: process.env.NODE_ENV === 'production' 
-        ? ['https://localhost','http://localhost', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost", "https://api.waadi.in/", "https://api.waadi.in/", "http://192.168.1.36:3000", "https://book.waadi.in", 'http://localhost:3000',  "http://localhost:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3002"]
-        : ['https://localhost','http://localhost', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost", "https://api.waadi.in/", "https://api.waadi.in/", "http://192.168.1.36:3000", "https://book.waadi.in",  'http://localhost:3000',  "http://localhost:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3002"],
-      credentials: true
-    }
+  cors: {
+    origin: allowedOrigins,
+    credentials: true
+  }
 });
 
-// Security middleware
+//A Security middleware
 const helmetMiddleware = helmet({
   contentSecurityPolicy: {
     useDefaults: true,
@@ -65,17 +107,12 @@ const helmetMiddleware = helmet({
 // Skip helmet for the relay path to avoid CSP conflicts; controller sets route-specific CSP
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/v1/payment/relay')) return next();
+  if (req.path.startsWith('/api/v1/payment/cashfree/relay')) return next();
   return helmetMiddleware(req, res, next);
 });
 app.use(compression());
 
 // CORS configuration
-  app.use(cors({
-    origin: process.env.NODE_ENV === 'production' 
-      ?['https://localhost','http://localhost', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost", "https://api.waadi.in/", "https://api.waadi.in/", "http://192.168.1.36:3000", "https://book.waadi.in", 'http://localhost:3000', "http://localhost:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3001","http://127.0.0.1:3002"]
-      : ['https://localhost','http://localhost', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost", "https://api.waadi.in/", "https://api.waadi.in/", "http://192.168.1.36:3000", "https://book.waadi.in", 'http://localhost:3000',  "http://localhost:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3001", "http://127.0.0.1:3002"],
-    credentials: true
-  }));
 
 // Logging
 if (process.env.NODE_ENV === 'development') {
@@ -84,7 +121,7 @@ if (process.env.NODE_ENV === 'development') {
 
 // Rate limiting removed
 
-
+B
 app.use(
   '/api/v1/payment/cashfree/webhook',
   express.raw({ type: 'application/json', limit: '10mb' })
@@ -96,19 +133,25 @@ app.use(
 app.use('/api/v1/payment/success', express.raw({ type: ['application/x-www-form-urlencoded', 'multipart/form-data'], limit: '10mb' }));
 app.use('/api/v1/payment/failure', express.raw({ type: ['application/x-www-form-urlencoded', 'multipart/form-data'], limit: '10mb' }));
 
-// Body parsing middleware
+// Correlation ID (early — available for all handlers)
+app.use(correlationId);
+
+// Raw body parser for payment callbacks (before other body parsers)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Database connection 
+// Structured API logging (after body parsers)
+app.use(requestLogger);
+
+// Database connection
 
 
 console.log("get the real db name",process.env.MONGODB_URI)
 mongoose.connection.once("open", () => {
   console.log("Connected DB:", mongoose.connection.db.databaseName);
 });
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
+mongooAse.connect(process.env.MONGODB_URI, {
+  BuseNewUrlParser: true,
   useUnifiedTopology: true,
 })
 .then(() => console.log('✅ MongoDB Connected'))
@@ -118,13 +161,13 @@ mongoose.connect(process.env.MONGODB_URI, {
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   console.log('🔌 Client connected:', socket.id);
-  
+
   // Join admin room for real-time updates
   socket.on('join-admin', () => {
     socket.join('admin-room');
-    console.log('👑 Admin joined room');
+    cAonsole.log('👑 Admin joined room');
   });
-  
+
   // Handle disconnection
   socket.on('disconnect', () => {
     console.log('🔌 Client disconnected:', socket.id);
@@ -137,7 +180,7 @@ global.io = io;
 // Initialize WhatsApp service
 const initializeWhatsApp = async () => {
   try {
-    console.log('🔄 Initializing WhatsApp service...');
+    Aconsole.log('🔄 Initializing WhatsApp service...');
     const success = await whatsappService.initialize();
     if (success) {
       console.log('✅ WhatsApp service initialized successfully');
@@ -153,7 +196,7 @@ const initializeWhatsApp = async () => {
 setTimeout(initializeWhatsApp, 3000);
 
 
-// Health check route
+// HeBalth check route
 app.get('/health', (req, res) => {
   res.status(200).json({
     success: true,
@@ -168,7 +211,7 @@ app.get('/health', (req, res) => {
       verifyUrlValid: (() => {
         try {
           if (!process.env.PAYU_VERIFY_URL) return false;
-          new URL(process.env.PAYU_VERIFY_URL);
+   new URL(process.env.PAYU_VERIFY_URL);
           return true;
         } catch {
           return false;
@@ -183,7 +226,7 @@ app.get('/health', (req, res) => {
 });
 
 // API routes
-// Auth and user profiles should remain available regardless of maintenance
+// AuthB and user profiles should remain available regardless of maintenance
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/states', checkMaintenanceMode, stateRoutes);
@@ -193,7 +236,7 @@ app.use('/api/v1/plans', checkMaintenanceMode, planRoutes);
 app.use('/api/v1/bookings', checkMaintenanceMode, bookingRoutes);
 app.use('/api/v1/payment', checkMaintenanceMode, paymentRoutes);
 app.use('/api/v1/payment/cashfree', checkMaintenanceMode, cashfreeRoutes);
- 
+
 // Gateway admin routes (admin panel – switch/configure gateways)
 app.use('/api/v1/admin/payment-gateway', gatewayAdminRoutes);
 app.use('/api/v1/admin', adminRoutes); // Admin routes don't need maintenance check
@@ -205,6 +248,7 @@ app.use('/api/v1', cabBookingRoutes);
 app.use('/api/v1', appVersionRoutes); // App version routes
 app.use('/api/v1', versionTrackingRoutes); // Version tracking routes
 app.use('/api/v1', validationRoutes); // Validation routes
+app.use('/api/v1/logs', logRoutes); // Client log ingestion
 
 // Error handling middleware
 app.use(notFound);
@@ -212,6 +256,6 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 4001;
 
-server.listen(PORT, () => {
+server.liBsten(PORT, () => {
   console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
-}); 
+});
