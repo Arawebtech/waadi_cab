@@ -2228,13 +2228,24 @@ const Bookings: React.FC = () => {
                   <tr 
                     key={booking._id} 
                       onClick={() => handleBookingSelection(booking._id)}
+                      // className={`cursor-pointer hover:bg-gray-50 transition-all duration-300 ${
+                      // isNewBooking(booking) && !viewedBookings.has(booking._id)
+                      //   ? 'animate-new-booking border-l-4 border-yellow-400' 
+                      //   : ''
+                      // } ${!booking.processed_by_admin ? 'animate-unprocessed' : ''} ${
+                      //   isSelected ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+                      // }`}
                       className={`cursor-pointer hover:bg-gray-50 transition-all duration-300 ${
-                      isNewBooking(booking) && !viewedBookings.has(booking._id)
-                        ? 'animate-new-booking border-l-4 border-yellow-400' 
-                        : ''
-                      } ${!booking.processed_by_admin ? 'animate-unprocessed' : ''} ${
-                        isSelected ? 'bg-blue-50 border-l-4 border-blue-500' : ''
-                      }`}
+  !booking.processed_by_admin
+    ? 'animate-new-booking border-l-4 border-yellow-500'
+    : ''
+} ${
+  isNewBooking(booking) && !viewedBookings.has(booking._id)
+    ? 'animate-new-booking border-l-4 border-yellow-400'
+    : ''
+} ${
+  isSelected ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+}`}
                   >
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
                       <div className="flex items-center">
