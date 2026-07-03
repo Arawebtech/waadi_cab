@@ -75,6 +75,54 @@ export class AdminAPI {
     return response.data;
   }
 
+  static async getAuditTrail(params: {
+    bookingId?: string;
+    transactionId?: string;
+    requestId?: string;
+    userId?: string;
+    limit?: number;
+  }) {
+    const response = await api.get('/admin/audit-trail', { params });
+    return response.data;
+  }
+
+  static async downloadJourneyReportPdf(params: {
+    bookingId?: string;
+    transactionId?: string;
+    userId?: string;
+  }): Promise<Blob> {
+    const response = await api.get('/admin/audit-trail/report', {
+      params,
+      responseType: 'blob',
+      timeout: 120000,
+    });
+    return response.data;
+  }
+
+  static getJourneyReportPdfUrl(params: {
+    bookingId?: string;
+    transactionId?: string;
+    userId?: string;
+  }) {
+    const qs = new URLSearchParams();
+    if (params.bookingId) qs.set('bookingId', params.bookingId);
+    if (params.transactionId) qs.set('transactionId', params.transactionId);
+    if (params.userId) qs.set('userId', params.userId);
+    return `${BASE_URL}/admin/audit-trail/report?${qs.toString()}`;
+  }
+
+  static async getSystemLogs(params?: {
+    bookingId?: string;
+    transactionId?: string;
+    requestId?: string;
+    category?: string;
+    level?: string;
+    limit?: number;
+  }) {
+    const response = await api.get('/admin/system-logs', { params });
+    return response.data;
+  }
+
     static getCustomerLogsUrl(params?: {
     phoneNumber?: string;
     userId?: string;

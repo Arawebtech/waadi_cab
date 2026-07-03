@@ -24,7 +24,7 @@ function getCashfreeEnvCredentials() {
     appId: process.env.CASHFREE_APP_ID || '',
     secretKey: process.env.CASHFREE_SECRET_KEY || '',
     webhookSecret: process.env.CASHFREE_WEBHOOK_SECRET || '',
-    environment: process.env.CASHFREE_ENVIRONMENT || 'sandbox',
+    environment: (process.env.CASHFREE_ENVIRONMENT || 'sandbox').trim().toLowerCase(),
   };
 }
 
@@ -69,9 +69,9 @@ function syncCashfreeService() {
   cashfreeService.appId = appId;
   cashfreeService.secretKey = secretKey;
   if (webhookSecret) cashfreeService.webhookSecret = webhookSecret;
-  cashfreeService.environment = environment;
+  cashfreeService.environment = (environment || 'sandbox').trim().toLowerCase();
   cashfreeService.baseUrl =
-    environment === 'production'
+    cashfreeService.environment === 'production'
       ? 'https://api.cashfree.com/pg'
       : 'https://sandbox.cashfree.com/pg';
 

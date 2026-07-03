@@ -21,6 +21,7 @@ import AppVersions from './pages/AppVersions';
 // import './App.css';
 // import './index';
 import CustomerLogsPage from './components/CustomerLogsPage';
+import AuditTrailPage from './components/AuditTrailPage';
 import PaymentGatewaySettings from './components/PaymentGatewaySettings';
 
 function App() {
@@ -43,6 +44,7 @@ function App() {
               <Route path="cab-bookings" element={<CabBookings />} />
               <Route path="notifications" element={<Notifications />} />
               <Route path="customer-logs" element={<CustomerLogsPage />} />
+              <Route path="audit-trail" element={<AuditTrailPage />} />
               <Route path="payment-change" element={<PaymentGatewaySettings />} />
               <Route path="app-status" element={<AppStatus />} />
               <Route path="app-versions" element={<AppVersions />} />

@@ -14,13 +14,143 @@ const Payment = require('../models/Payment');
 const cashfreeService = require('../services/cashfreeService');
 const whatsappService = require('../services/whatsappService');
 const saveCustomerLog = require('../utils/saveCustomerLog');
+const { isAppPlatformRequest } = require('../utils/platformRequest');
+const { redirectAfterPayment } = require('../utils/paymentAppRedirect');
 
 class CashfreeController {
+  // ─── GET /payment/cashfree/relay ─────────────────────────────────────────────
+  /**
+   * Browser relay — loads Cashfree JS SDK on our whitelisted backend domain,
+   * then calls cashfree.checkout({ paymentSessionId }). Same role as PayU /payment/relay.
+   * Direct navigation to payments.cashfree.com/order/#/session_… is unsupported and returns 500.
+   */
+  _renderRelayError(res, message, details = {}) {
+    console.error('❌ Cashfree relay rejected:', { message, ...details });
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(400).send(
+      `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Payment Error</title></head>` +
+        `<body style="font-family:system-ui;padding:24px;line-height:1.5"><h2>Unable to start payment</h2>` +
+        `<p>${message}</p><p style="color:#6b7280;font-size:14px">Please close this window and try again from the app.</p></body></html>`
+    );
+  }
+
+  async renderCheckoutRelay(req, res) {
+    try {
+      const source = req.method === 'GET' ? req.query : (req.body || {});
+
+      const rawSessionId = source.payment_session_id || source.session_id;
+      const sessionValidation = cashfreeService.validatePaymentSessionId(rawSessionId);
+      if (!sessionValidation.valid) {
+        return this._renderRelayError(res, sessionValidation.error, {
+          received: rawSessionId ? String(rawSessionId).substring(0, 32) : '(empty)',
+          method: req.method,
+        });
+      }
+
+      const paymentSessionId = sessionValidation.value;
+      const platform = String(source.platform || '').trim().toLowerCase();
+
+      const envMode = cashfreeService.environment === 'production' ? 'production' : 'sandbox';
+      const modeParam = String(source.mode || envMode).trim().toLowerCase();
+      const mode = modeParam === 'production' ? 'production' : 'sandbox';
+
+      if (mode !== envMode) {
+        console.warn('⚠️ Cashfree relay mode/env mismatch:', {
+          relayMode: mode,
+          serverEnvironment: cashfreeService.environment,
+          payment_session_id: `${paymentSessionId.substring(0, 24)}…`,
+        });
+      }
+
+      console.log('🔗 Cashfree relay checkout:', {
+        payment_session_id: `${paymentSessionId.substring(0, 24)}…`,
+        mode,
+        platform: platform || 'web',
+        method: req.method,
+        userAgent: req.headers['user-agent'],
+      });
+
+      const redirectTarget = '_self';
+
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.status(200).send(
+        `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Redirecting to Cashfree…</title>
+    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+    <style>
+      body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;padding:24px;line-height:1.5}
+      .box{max-width:560px;margin:40px auto;border:1px solid #e5e7eb;border-radius:12px;padding:24px}
+      .btn{background:#16a34a;border:0;color:#fff;padding:10px 16px;border-radius:8px;font-weight:600;cursor:pointer}
+      .meta{color:#6b7280;font-size:14px;margin-top:8px}
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <h2>Redirecting to Cashfree…</h2>
+      <p class="meta">Please wait while we securely connect to the payment gateway.</p>
+      <noscript>
+        <button type="button" class="btn" onclick="location.reload()">Continue to Cashfree</button>
+      </noscript>
+    </div>
+    <script>
+      (function () {
+        var paymentSessionId = ${JSON.stringify(paymentSessionId)};
+        var mode = ${JSON.stringify(mode)};
+        var redirectTarget = ${JSON.stringify(redirectTarget)};
+        var attempts = 0;
+        function showError(msg) {
+          var box = document.querySelector('.box');
+          if (box) {
+            box.innerHTML = '<h2>Payment could not start</h2><p class="meta">' + msg + '</p>';
+          }
+        }
+        function launch() {
+          attempts += 1;
+          if (typeof Cashfree !== 'function') {
+            if (attempts > 50) {
+              showError('Cashfree SDK failed to load. Check network and domain whitelist.');
+              return;
+            }
+            return setTimeout(launch, 100);
+          }
+          try {
+            var cashfree = Cashfree({ mode: mode });
+            cashfree.checkout({ paymentSessionId: paymentSessionId, redirectTarget: redirectTarget });
+          } catch (err) {
+            console.error('Cashfree checkout error:', err);
+            showError(err && err.message ? err.message : 'Checkout failed to launch.');
+          }
+        }
+        launch();
+      })();
+    </script>
+  </body>
+</html>`
+      );
+    } catch (error) {
+      console.error('❌ Cashfree relay error:', error);
+      if (error.response?.data) {
+        console.error('❌ Cashfree relay API response:', JSON.stringify(error.response.data));
+      }
+      if (error.stack) {
+        console.error('❌ Cashfree relay stack:', error.stack);
+      }
+      return this._renderRelayError(res, 'Failed to render Cashfree checkout page');
+    }
+  }
+
   // ─── POST /payment/cashfree/initiate ──────────────────────────────────────
   /**
    * Called by the React checkout page right after the user taps "Pay Now".
-   * Creates a Cashfree order and returns the payment_session_id
-   * that the frontend Cashfree JS SDK needs to open the checkout modal.
+   * Creates a Cashfree order and returns browser checkout URLs (no WebView SDK).
    */
   async initiatePayment(req, res) {
     try {
@@ -67,7 +197,8 @@ class CashfreeController {
       }
 
       // Create Cashfree order
-      const result = await cashfreeService.preparePaymentData(booking, user);
+      const platform = isAppPlatformRequest(req) ? 'app' : 'web';
+      const result = await cashfreeService.preparePaymentData(booking, user, { platform });
 
       if (!result.success) {
         return res.status(502).json({
@@ -78,13 +209,15 @@ class CashfreeController {
       }
 
       cashfreeService.logTransaction('initiate', {
-        orderId: result.orderId,
+        txnid: result.paymentData.txnid,
+        payment_session_id: result.paymentData.payment_session_id,
         amount: booking.amount,
+        bookingId: booking.bookingId,
+        environment: cashfreeService.environment,
       });
 
-      // Save the Cashfree orderId on the booking so we can match it in the webhook
       booking.payment_details = booking.payment_details || {};
-      booking.payment_details.transaction_id = result.orderId;
+      booking.payment_details.transaction_id = result.paymentData.txnid;
       booking.payment_details.payment_method = 'cashfree';
       await booking.save();
 
@@ -97,13 +230,11 @@ class CashfreeController {
 
       return res.status(200).json({
         success: true,
-        message: 'Payment order created',
+        message: 'Cashfree payment initiated',
         data: {
-          orderId: result.orderId,
-          paymentSessionId: result.paymentSessionId,
-          amount: booking.amount,
-          environment: result.environment,
-          expiresAt: result.expiresAt,
+          gateway: 'cashfree',
+          paymentUrl: result.paymentUrl,
+          paymentData: result.paymentData,
         },
       });
     } catch (error) {
@@ -124,56 +255,55 @@ class CashfreeController {
    * Query params from Cashfree: ?order_id=<>&order_token=<>
    */
   async handleSuccess(req, res) {
-  try {
-    const { order_id } = req.query;
+    try {
+      const { order_id } = req.query;
 
-    const verification = await cashfreeService.verifyOrder(order_id);
+      console.log('\n' + '='.repeat(80));
+      console.log('🎉 Cashfree SUCCESS callback received');
+      console.log('='.repeat(80));
+      console.log('- order_id:', order_id);
+      console.log('- platform:', req.query.platform);
+      console.log('- user-agent:', req.headers['user-agent']);
 
-    if (!verification.verified) {
-      const frontendBase = process.env.FRONTEND_URL || 'https://book.waadi.in';
+      if (!order_id) {
+        return redirectAfterPayment(res, 'failure', {
+          error: 'Missing order_id from Cashfree',
+        });
+      }
 
-      return res.redirect(
-        `${frontendBase}/payment/failure?order_id=${order_id}&gateway=cashfree`
-      );
+      const verification = await cashfreeService.verifyOrder(order_id);
+      const normalized = cashfreeService.getPaymentStatus(verification.status);
+
+      const booking = await Booking.findOne({
+        'payment_details.transaction_id': order_id,
+      });
+
+      if (verification.verified && booking) {
+        booking.status = 'paid';
+        booking.payment_details.payment_method = 'cashfree';
+        booking.payment_details.payment_reference = verification.paymentId;
+        booking.payment_details.paid_at = new Date();
+        await booking.save();
+        console.log('✅ Booking marked paid:', booking.bookingId);
+      }
+
+      const outcome =
+        normalized === 'paid' ? 'success' : normalized === 'pending' ? 'pending' : 'failure';
+
+      return redirectAfterPayment(res, outcome, {
+        txnId: order_id,
+        amount: verification.amount ?? booking?.amount,
+        bookingId: booking?.bookingId,
+        error: outcome === 'failure' ? `Order status: ${verification.status}` : undefined,
+      });
+    } catch (err) {
+      console.error('❌ Cashfree success error:', err);
+      return redirectAfterPayment(res, 'failure', {
+        txnId: req.query.order_id,
+        error: err.message,
+      });
     }
-
-    // booking update logic
-    const booking = await Booking.findOne({
-      "payment_details.transaction_id": order_id
-    });
-
-    if (booking) {
-      booking.status = 'paid';
-      booking.payment_details.payment_method = 'cashfree';
-      booking.payment_details.payment_reference =
-        verification.paymentId;
-
-      await booking.save();
-    }
-
-    const frontendBase =
-      process.env.FRONTEND_URL || 'https://book.waadi.in';
-
-    return res.redirect(
-      `${frontendBase}/payment/success` +
-      `?txnid=${order_id}` +
-      `&status=success` +
-      `&amount=${verification.amount}` +
-      `&bookingId=${booking?.bookingId || ''}` +
-      `&gateway=cashfree`
-    );
-
-  } catch (err) {
-    console.error("Cashfree success error:", err);
-
-    const frontendBase =
-      process.env.FRONTEND_URL || 'https://book.waadi.in';
-
-    return res.redirect(
-      `${frontendBase}/payment/failure?gateway=cashfree`
-    );
   }
-}
   // async handleSuccess(req, res) {
   //   try {
   //     const { order_id } = req.query;
@@ -279,9 +409,16 @@ class CashfreeController {
     try {
       const { order_id } = req.query;
 
+      console.log('❌ Cashfree FAILURE callback:', {
+        order_id,
+        platform: req.query.platform,
+        userAgent: req.headers['user-agent'],
+        query: req.query,
+      });
+      let booking = null;
+
       if (order_id) {
-        // Mark booking as failed if we can find it
-        const booking = await Booking.findOne({
+        booking = await Booking.findOne({
           'payment_details.transaction_id': order_id,
         });
 
@@ -307,10 +444,17 @@ class CashfreeController {
         }
       }
 
-      return this._redirectToApp(res, 'failure', order_id, 'Payment failed or cancelled');
+      return redirectAfterPayment(res, 'failure', {
+        txnId: order_id,
+        amount: booking?.amount,
+        error: 'Payment failed or cancelled',
+      });
     } catch (error) {
       console.error('❌ CashfreeController.handleFailure error:', error);
-      return this._redirectToApp(res, 'failure', req.query.order_id, error.message);
+      return redirectAfterPayment(res, 'failure', {
+        txnId: req.query.order_id,
+        error: error.message,
+      });
     }
   }
 
@@ -383,18 +527,17 @@ class CashfreeController {
    */
   async verifyPayment(req, res) {
     try {
-      const { orderId } = req.body;
+      const txnId = req.body.txnId || req.body.orderId;
       const userId = req.user._id;
 
-      if (!orderId) {
-        return res.status(400).json({ success: false, message: 'orderId is required' });
+      if (!txnId) {
+        return res.status(400).json({ success: false, message: 'txnId is required' });
       }
 
-      const verification = await cashfreeService.verifyOrder(orderId);
+      const verification = await cashfreeService.verifyOrder(txnId);
 
-      // Also look up our DB record
       const booking = await Booking.findOne({
-        'payment_details.transaction_id': orderId,
+        'payment_details.transaction_id': txnId,
         user: userId,
       }).populate('visiting_state', 'name');
 
@@ -405,21 +548,83 @@ class CashfreeController {
         return res.status(404).json({ success: false, message: 'Booking not found' });
       }
 
+      if (verification.verified && booking.status !== 'paid') {
+        booking.status = 'paid';
+        booking.payment_details = booking.payment_details || {};
+        booking.payment_details.payment_method = 'cashfree';
+        booking.payment_details.payment_reference = verification.paymentId;
+        await booking.save();
+      }
+
+      const normalized = cashfreeService.resolvePollingStatus(verification.status, booking.status);
+      const apiStatus =
+        normalized === 'paid' ? 'success' : normalized === 'pending' ? 'pending' : 'failure';
+
       return res.status(200).json({
-        success: true,
+        success: verification.verified || apiStatus === 'pending',
         data: {
-          orderId,
-          verified: verification.verified,
-          status: verification.status,
+          txnId,
+          status: apiStatus,
+          paymentId: verification.paymentId,
+          amount: booking.amount,
           bookingId: booking.bookingId,
           bookingStatus: booking.status,
-          amount: booking.amount,
-          visitingState: booking.visiting_state?.name,
         },
       });
     } catch (error) {
       console.error('❌ CashfreeController.verifyPayment error:', error);
       return res.status(500).json({ success: false, message: 'Verification failed' });
+    }
+  }
+
+  // ─── GET /payment/cashfree/status/:txnId ─────────────────────────────────
+  /** Mirrors GET /payment/status/:txnId for PayU polling. */
+  async getPaymentStatus(req, res) {
+    try {
+      const txnId = req.params.txnId || req.params.orderId;
+      const userId = req.user._id;
+
+      if (!txnId) {
+        return res.status(400).json({ success: false, message: 'txnId is required' });
+      }
+
+      const booking = await Booking.findOne({
+        'payment_details.transaction_id': txnId,
+        user: userId,
+      }).populate('visiting_state', 'name');
+
+      if (!booking) {
+        return res.status(404).json({ success: false, message: 'Payment transaction not found' });
+      }
+
+      const verification = await cashfreeService.verifyOrder(txnId);
+      const normalized = cashfreeService.resolvePollingStatus(verification.status, booking.status);
+
+      if (verification.verified && booking.status !== 'paid') {
+        booking.status = 'paid';
+        booking.payment_details = booking.payment_details || {};
+        booking.payment_details.payment_reference = verification.paymentId;
+        booking.payment_details.paid_at = new Date();
+        await booking.save();
+      }
+
+      const apiStatus =
+        normalized === 'paid' ? 'success' : normalized === 'pending' ? 'pending' : 'failure';
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          txnId,
+          status: apiStatus,
+          paymentId: verification.paymentId,
+          amount: booking.amount,
+          bookingId: booking.bookingId,
+          bookingStatus: booking.status === 'paid' ? 'paid' : booking.status,
+        },
+      });
+    } catch (error) {
+      console.error('❌ Cashfree getPaymentStatus error:', error);
+      return res.status(500).json({ success: false, message: 'Failed to get payment status' });
     }
   }
 
@@ -566,50 +771,6 @@ class CashfreeController {
     if (whatsappService.isReady) {
       await whatsappService.sendPaymentConfirmation(booking, booking.user);
     }
-  }
-
-  /**
-   * Redirect the browser to the React frontend.
-   * Mirrors the deep-link pattern already used in paymentController.
-   */
-  _redirectToApp(res, status, orderId, errorMsg, booking) {
-    const frontendBase =
-      process.env.FRONTEND_URL || 'http://localhost:3000';
-    const appDeepLinkBase =
-      process.env.APP_DEEP_LINK_BASE || 'wadicab://payment';
-
-    const isAppPlatform =
-      res.req &&
-      (res.req.headers['x-platform'] === 'app' ||
-        res.req.query.platform === 'app');
-
-    if (isAppPlatform) {
-      const deepLink =
-        status === 'success'
-          ? `${appDeepLinkBase}/success?order_id=${encodeURIComponent(orderId || '')}&gateway=cashfree&booking_id=${encodeURIComponent(booking?.bookingId || '')}`
-          : `${appDeepLinkBase}/failure?order_id=${encodeURIComponent(orderId || '')}&gateway=cashfree&error=${encodeURIComponent(errorMsg || 'Payment failed')}`;
-
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      return res.status(200).send(
-        `<!doctype html><html><head><meta charset="utf-8"><title>Payment ${status}</title>` +
-          `<meta http-equiv="refresh" content="0;url='${deepLink}'"></head>` +
-          `<body><script>setTimeout(function(){window.location='${deepLink}';},0);</script>` +
-          `<p>If not redirected, <a href="${deepLink}">tap here</a>.</p></body></html>`
-      );
-    }
-
-    // Web redirect
-    const redirectUrl =
-      status === 'success'
-        ? `${frontendBase}/payment/success` +
-      `?txnid=${order_id}` +
-      `&status=success` +
-      `&amount=${verification.amount}` +
-      `&bookingId=${booking?.bookingId || ''}` +
-      `&gateway=cashfree`
-        : `${frontendBase}/payment/failure?txnid=${order_id}&status=failure&amount=${verification.amount}&error=${encodeURIComponent(errorMsg || 'Payment failed')}`;
-
-    return res.redirect(302, redirectUrl);
   }
 }
 

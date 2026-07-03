@@ -1,6 +1,8 @@
 const Plan = require('../models/Plan');
 const VehicleType = require('../models/VehicleType');
 const State = require('../models/State');
+const lifecycle = require('../utils/bookingLifecycleLogger');
+const logger = require('../utils/logger');
 
 class ValidationController {
   // POST /api/v1/validate-booking - Validate booking data and pricing
@@ -21,6 +23,7 @@ class ValidationController {
 
       // Validate required fields
       if (!visitingStateId || !vehicleTypeId || !planId || !vehicleNumber || !whatsappNumber || !entryBorderId || !fromDate || !uptoDate) {
+        lifecycle.logBookingValidationFailed(req, 'Missing required validation fields');
         return res.status(400).json({
           success: false,
           message: 'All required fields must be provided',
@@ -152,7 +155,20 @@ class ValidationController {
         }
       });
 
+      lifecycle.logValidationSuccess(req, {
+        vehicleNumber: vehicleNumber.toUpperCase(),
+        amount: plan.amount,
+        planType: plan.type,
+        state: state.name,
+      });
+
     } catch (error) {
+      logger.error('booking', 'Booking validation error', {
+        sourceFile: 'validationController.js',
+        sourceFunction: 'validateBooking',
+        error: error.message,
+        stack: error.stack,
+      });
       console.error('Booking validation error:', error);
       res.status(500).json({
         success: false,

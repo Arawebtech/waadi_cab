@@ -7,7 +7,7 @@
  * All routes require the existing isAdmin middleware already used by adminRoutes.
  */
 
-const PaymentGatewayConfig = require('../models/PaymentGatewayconfig');
+const PaymentGatewayConfig = require('../models/PaymentGatewayConfig');
 const gatewayCredentials = require('../utils/gatewayCredentials');
 
 class GatewayAdminController {

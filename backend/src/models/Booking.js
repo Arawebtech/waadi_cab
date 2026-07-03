@@ -214,4 +214,7 @@ bookingSchema.methods.getSummary = function() {
   };
 };
 
+const mongooseAuditPlugin = require('../utils/mongooseAuditPlugin');
+bookingSchema.plugin(mongooseAuditPlugin, { modelName: 'Booking' });
+
 module.exports = mongoose.model('Booking', bookingSchema); 
