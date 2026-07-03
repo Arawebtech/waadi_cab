@@ -5,9 +5,9 @@
 Your frontend is now configured to work with your local backend:
 
 ### **Backend API Endpoints:**
-- **Hash Generation**: `POST http://localhost:4001/api/v1/payment/generate-hash`
-- **Payment Verification**: `POST http://localhost:4001/api/v1/payment/verify`
-- **Payment Status**: `GET http://localhost:4001/api/v1/payment/status/:txnId`
+- **Hash Generation**: `POST https://api.waadi.in/api/v1/payment/generate-hash`
+- **Payment Verification**: `POST https://api.waadi.in/api/v1/payment/verify`
+- **Payment Status**: `GET https://api.waadi.in/api/v1/payment/status/:txnId`
 
 ### **Frontend URLs:**
 - **Success Page**: `http://localhost/payment/success`
@@ -71,7 +71,7 @@ In your PayU merchant panel, set these callback URLs:
 ```bash
 # In your backend directory
 npm run dev
-# Backend should run on http://localhost:4001
+# Backend should run on https://api.waadi.in
 ```
 
 ### **2. Start Frontend**

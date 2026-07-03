@@ -176,7 +176,7 @@
 
                 const formData = new FormData(e.target);
                 
-                const response = await fetch('http://localhost:4001/api/v1/admin/app-versions', {
+                const response = await fetch('https://api.waadi.in/api/v1/admin/app-versions', {
                     method: 'POST',
                     body: formData
                 });
@@ -216,7 +216,7 @@
                 `;
                 lucide.createIcons();
 
-                const response = await fetch('http://localhost:4001/api/v1/admin/app-versions');
+                const response = await fetch('https://api.waadi.in/api/v1/admin/app-versions');
                 const result = await response.json();
 
                 if (result.success && result.data.length > 0) {

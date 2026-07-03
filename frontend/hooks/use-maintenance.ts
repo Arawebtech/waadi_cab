@@ -10,7 +10,7 @@ interface MaintenanceStatus {
   error: string | null;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.waadi.in/api/v1';
 // Allow overriding app-status endpoint independently (e.g., 127.0.0.1:3001/app-status)
 const APP_STATUS_URL =
   process.env.NEXT_PUBLIC_APP_STATUS_URL || `${API_BASE_URL}/app-status`;

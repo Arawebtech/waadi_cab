@@ -19,7 +19,7 @@ import {
 } from '../types';
 
 // Base URL for API
-const BASE_URL = process.env.REACT_APP_API_URL || 'https://mdk7v2f6-4001.inc1.devtunnels.ms/api/v1';
+const BASE_URL = process.env.REACT_APP_API_URL || 'https://api.waadi.in/api/v1';
 
 // Create axios instance
 const api = axios.create({

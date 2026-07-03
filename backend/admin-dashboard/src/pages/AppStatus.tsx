@@ -44,7 +44,7 @@ const AppStatus: React.FC = () => {
     try {
       setLoading(true);
       // Use public endpoint for testing
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:4001/api/v1';
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://api.waadi.in/api/v1';
       const response = await fetch(`${apiUrl}/app-settings-public`);
       const data = await response.json();
       
@@ -88,7 +88,7 @@ const AppStatus: React.FC = () => {
       }
 
       // Use public endpoint for testing
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:4001/api/v1';
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://api.waadi.in/api/v1';
       const response = await fetch(`${apiUrl}/app-settings-toggle-public`, {
         method: 'PUT',
         headers: {
@@ -129,7 +129,7 @@ const AppStatus: React.FC = () => {
       setSaving(true);
       
       // Use public endpoint for testing
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:4001/api/v1';
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://api.waadi.in/api/v1';
       const response = await fetch(`${apiUrl}/app-settings-update-maintenance-public`, {
         method: 'PUT',
         headers: {
@@ -167,7 +167,7 @@ const AppStatus: React.FC = () => {
       setSaving(true);
       
       // Use public endpoint for testing
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:4001/api/v1';
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://api.waadi.in/api/v1';
       const response = await fetch(`${apiUrl}/app-settings-update-platform-fee-public`, {
         method: 'PUT',
         headers: {

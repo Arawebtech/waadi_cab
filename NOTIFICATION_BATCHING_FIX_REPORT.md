@@ -118,7 +118,7 @@ try {
 
 ### **Before Fix**
 ```bash
-curl -X POST "http://localhost:4001/api/v1/push/send-to-all" \
+curl -X POST "https://api.waadi.in/api/v1/push/send-to-all" \
   -H "Content-Type: application/json" \
   -d '{"title": "Test", "body": "Message"}'
 
@@ -132,7 +132,7 @@ curl -X POST "http://localhost:4001/api/v1/push/send-to-all" \
 
 ### **After Fix**
 ```bash
-curl -X POST "http://localhost:4001/api/v1/push/send-to-all" \
+curl -X POST "https://api.waadi.in/api/v1/push/send-to-all" \
   -H "Content-Type: application/json" \
   -d '{"title": "Test", "body": "Message"}'
 
