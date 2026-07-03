@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import safe area utilities */
+@import '../styles/safe-area.css';
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 94.1%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .mobile-container {
+    @apply min-h-screen bg-gray-50;
+    /* Ensure proper safe area handling */
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .mobile-header {
+    @apply bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-50;
+    /* Additional top margin for status bar */
+    margin-top: env(safe-area-inset-top, 0px);
+  }
+
+  .mobile-content {
+    @apply pb-20;
+    /* Ensure content doesn't get hidden behind navigation */
+    padding-bottom: calc(5rem + max(env(safe-area-inset-bottom, 0px), 20px));
+  }
+
+  .bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 z-50;
+    /* Enhanced safe area handling for navigation bars */
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 20px);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .mobile-form-group {
+    @apply space-y-3 mb-6;
+  }
+
+  .mobile-input {
+    @apply h-12 text-base;
+  }
+
+  .mobile-button {
+    @apply h-12 text-base font-medium;
+  }
+
+  .mobile-card {
+    @apply mx-4 mb-4 rounded-xl shadow-sm;
+  }
+
+  .ptr-element {
+    @apply text-center py-4 text-gray-500;
+  }
+
+  /* Safe area utilities for all pages */
+  .safe-area-page {
+    min-height: 100vh;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .safe-area-content {
+    padding-top: max(env(safe-area-inset-top, 0px), 20px);
+    padding-left: max(env(safe-area-inset-left, 0px), 16px);
+    padding-right: max(env(safe-area-inset-right, 0px), 16px);
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 20px);
+  }
+
+  /* Ensure all pages respect safe areas */
+  .page-container {
+    min-height: 100vh;
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  /* Public pages (login, signup, etc.) safe area handling */
+  .public-page {
+    min-height: 100vh;
+    padding-top: max(env(safe-area-inset-top, 0px), 20px);
+    padding-left: max(env(safe-area-inset-left, 0px), 16px);
+    padding-right: max(env(safe-area-inset-right, 0px), 16px);
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 20px);
+  }
+}

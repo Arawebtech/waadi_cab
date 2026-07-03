@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "930749864719",
+    "project_id": "waadicab",
+    "storage_bucket": "waadicab.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:930749864719:android:72a905a19f6c335d563c7a",
+        "android_client_info": {
+          "package_name": "com.MP.Waadi_App"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDPIsyUAjliQx9N6YSblak2CImF1CRqMcU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

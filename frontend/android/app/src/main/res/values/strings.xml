@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">WadiCab</string>
+    <string name="title_activity_main">WadiCab</string>
+    <string name="package_name">com.wadicab.app</string>
+    <string name="custom_url_scheme">com.wadicab.app</string>
+</resources>
