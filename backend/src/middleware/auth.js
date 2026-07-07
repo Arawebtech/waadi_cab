@@ -17,7 +17,8 @@ const authenticate = async (req, res, next) => {
       });
       return res.status(401).json({
         success: false,
-        message: 'Authorization header is required'
+        message: 'Unauthorized access',
+        code: 'AUTH_HEADER_REQUIRED',
       });
     }
 
@@ -38,7 +39,8 @@ const authenticate = async (req, res, next) => {
       });
       return res.status(401).json({
         success: false,
-        message: 'User not found or inactive'
+        message: 'User account not found',
+        code: 'USER_NOT_FOUND',
       });
     }
 

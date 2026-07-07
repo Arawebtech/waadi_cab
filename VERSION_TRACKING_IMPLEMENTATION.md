@@ -223,10 +223,10 @@ Added indexes for performance:
 ### Test Admin API
 ```bash
 # Get version stats
-curl https://api.waadi.in/api/v1/version-stats
+curl http://localhost:4001/api/v1/version-stats
 
 # Track version
-curl -X POST https://api.waadi.in/api/v1/version-track \
+curl -X POST http://localhost:4001/api/v1/version-track \
   -H "Content-Type: application/json" \
   -d '{
     "userId": "USER_ID_OR_PHONE",

@@ -1,0 +1,114 @@
+import { Capacitor } from '@capacitor/core';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { SplashScreen } from '@capacitor/splash-screen';
+import { Keyboard } from '@capacitor/keyboard';
+import { App } from '@capacitor/app';
+import { Network } from '@capacitor/network';
+
+/**
+ * Check if the app is running on a native platform
+ */
+export const isNativePlatform = () => {
+  return Capacitor.isNativePlatform();
+};
+
+/**
+ * Get the current platform
+ */
+export const getPlatform = () => {
+  return Capacitor.getPlatform();
+};
+
+/**
+ * Initialize Capacitor plugins
+ */
+export const initializeCapacitor = async () => {
+  if (!isNativePlatform()) return;
+
+  try {
+    // Hide splash screen
+    await SplashScreen.hide();
+
+    // Set status bar style
+    await StatusBar.setStyle({ style: Style.Default });
+    
+    // Show status bar
+    await StatusBar.show();
+
+    // Initialize network monitoring
+    await initializeNetworkMonitoring();
+
+    console.log('Capacitor initialized successfully');
+  } catch (error) {
+    console.error('Error initializing Capacitor:', error);
+  }
+};
+
+/**
+ * Initialize network monitoring for native platforms
+ */
+export const initializeNetworkMonitoring = async () => {
+  if (!isNativePlatform()) return;
+
+  try {
+    // Get initial network status
+    const status = await Network.getStatus();
+    console.log('🌐 Initial network status:', status);
+
+    // Set up network status change listener
+    await Network.addListener('networkStatusChange', (status) => {
+      console.log('Network status changed:', status);
+      
+      // You can emit custom events here if needed
+      if (status.connected) {
+        console.log('✅ Network connection restored');
+      } else {
+        console.log('❌ Network connection lost');
+      }
+    });
+
+    console.log('Network monitoring initialized');
+  } catch (error) {
+    console.error('Error initializing network monitoring:', error);
+  }
+};
+
+/**
+ * Status Bar utilities
+ */
+export const statusBar = {
+  setLight: () => StatusBar.setStyle({ style: Style.Light }),
+  setDark: () => StatusBar.setStyle({ style: Style.Dark }),
+  hide: () => StatusBar.hide(),
+  show: () => StatusBar.show(),
+  setBackgroundColor: (color: string) => StatusBar.setBackgroundColor({ color }),
+};
+
+/**
+ * Keyboard utilities
+ */
+export const keyboard = {
+  hide: () => Keyboard.hide(),
+  show: () => Keyboard.show(),
+  addDidShowListener: (callback: any) => Keyboard.addListener('keyboardDidShow', callback),
+  addDidHideListener: (callback: any) => Keyboard.addListener('keyboardDidHide', callback),
+};
+
+/**
+ * App utilities
+ */
+export const app = {
+  getInfo: () => App.getInfo(),
+  getState: () => App.getState(),
+  addBackButtonListener: (callback: any) => App.addListener('backButton', callback),
+  addStateChangeListener: (callback: any) => App.addListener('appStateChange', callback),
+  exitApp: () => App.exitApp(),
+  addUrlOpenListener: (callback: any) => App.addListener('appUrlOpen', callback),
+};
+
+/**
+ * Check if running in development mode
+ */
+export const isDev = () => {
+  return process.env.NODE_ENV === 'development';
+}; 

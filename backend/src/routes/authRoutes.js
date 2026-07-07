@@ -3,6 +3,7 @@ const { body } = require('express-validator');
 const authController = require('../controllers/authController');
 const logsController = require('../controllers/customerLogsController');
 const { authenticate, optionalAuth } = require('../middleware/auth');
+const { handleExpressValidation, rejectEmptyBody } = require('../middleware/validate.middleware');
 
 const router = express.Router();
 
@@ -81,26 +82,26 @@ const refreshTokenValidation = [
  * @desc    Register new user (sends OTP)
  * @access  Public
  */
-router.post('/signup', signupValidation, authController.signup);
+router.post('/signup', rejectEmptyBody, signupValidation, handleExpressValidation, authController.signup);
 
 /**
  * @route   POST /api/v1/auth/verify-signup
  * @desc    Verify OTP and complete signup
  * @access  Public
  */
-router.post('/verify-signup', [
+router.post('/verify-signup', rejectEmptyBody, [
   ...otpVerificationValidation,
   body('firstName').trim().isLength({ min: 2, max: 50 }).withMessage('First name is required'),
   body('lastName').trim().isLength({ min: 2, max: 50 }).withMessage('Last name is required'),
   body('userType').isIn(['driver', 'owner', 'agent']).withMessage('User type is required')
-], authController.verifyOTPAndSignup);
+], handleExpressValidation, authController.verifyOTPAndSignup);
 
 /**
  * @route   POST /api/v1/auth/login
  * @desc    Login user (sends OTP)
  * @access  Public
  */
-router.post('/login', loginValidation, authController.login);
+router.post('/login', rejectEmptyBody, loginValidation, handleExpressValidation, authController.login);
 
 
 router.get(
@@ -113,21 +114,21 @@ router.get(
  * @desc    Verify OTP and complete login
  * @access  Public
  */
-router.post('/verify-login', otpVerificationValidation, authController.verifyOTPAndLogin);
+router.post('/verify-login', rejectEmptyBody, otpVerificationValidation, handleExpressValidation, authController.verifyOTPAndLogin);
 
 /**
  * @route   POST /api/v1/auth/resend-otp
  * @desc    Resend OTP
  * @access  Public
  */
-router.post('/resend-otp', resendOTPValidation, authController.resendOTP);
+router.post('/resend-otp', rejectEmptyBody, resendOTPValidation, handleExpressValidation, authController.resendOTP);
 
 /**
  * @route   POST /api/v1/auth/refresh-token
  * @desc    Refresh access token using refresh token
  * @access  Public
  */
-router.post('/refresh-token', refreshTokenValidation, authController.refreshToken);
+router.post('/refresh-token', rejectEmptyBody, refreshTokenValidation, handleExpressValidation, authController.refreshToken);
 
 /**
  * @route   GET /api/v1/auth/check
@@ -174,7 +175,7 @@ router.post('/verify-phone', [
   body('phoneNumber')
     .isMobilePhone('en-IN')
     .withMessage('Please enter a valid Indian phone number')
-], authController.verifyPhone);
+], handleExpressValidation, authController.verifyPhone);
 
 /**
  * @route   POST /api/v1/auth/verify-phone-otp
@@ -184,7 +185,7 @@ router.post('/verify-phone', [
 router.post('/verify-phone-otp', [
   authenticate,
   ...otpVerificationValidation
-], async (req, res) => {
+], handleExpressValidation, async (req, res) => {
   try {
     const { phoneNumber, otp, verificationId } = req.body;
     

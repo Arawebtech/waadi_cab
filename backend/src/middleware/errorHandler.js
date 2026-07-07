@@ -1,11 +1,36 @@
 const logger = require('../utils/logger');
 const { maskSensitive } = require('../utils/maskSensitive');
+const AppError = require('../utils/AppError');
+
+const DUPLICATE_FIELD_LABELS = {
+  email: 'Email',
+  phoneNumber: 'Phone number',
+  phone: 'Phone number',
+  vehicleNumber: 'Vehicle number',
+  slug: 'Slug',
+};
+
+function duplicateKeyMessage(keyValue = {}) {
+  const field = Object.keys(keyValue)[0];
+  if (!field) return 'Resource already exists';
+  const label = DUPLICATE_FIELD_LABELS[field] || field.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase());
+  return `${label} already exists`;
+}
+
+function castErrorMessage(err) {
+  if (err.path === '_id' || err.kind === 'ObjectId') {
+    return 'Invalid ID format';
+  }
+  return 'Invalid data format';
+}
 
 const errorHandler = (err, req, res, next) => {
-  let error = { ...err };
-  error.message = err.message;
+  let statusCode = err.statusCode || 500;
+  let message = err.message || 'Server Error';
+  let errors = err.errors || null;
+  let code = err.code || undefined;
 
-  logger.error('error', err.message || 'Unhandled error', {
+  logger.error('error', message, {
     sourceFile: 'errorHandler.js',
     sourceFunction: 'errorHandler',
     requestId: req.requestId,
@@ -14,7 +39,7 @@ const errorHandler = (err, req, res, next) => {
     transactionId: req.correlation?.transactionId,
     endpoint: req.originalUrl,
     method: req.method,
-    statusCode: error.statusCode || 500,
+    statusCode,
     stack: err.stack,
     errorName: err.name,
     errorCode: err.code,
@@ -25,47 +50,55 @@ const errorHandler = (err, req, res, next) => {
     }),
   });
 
-  // Mongoose bad ObjectId
-  if (err.name === 'CastError') {
-    const message = 'Resource not found';
-    error = { message, statusCode: 404 };
+  if (err instanceof AppError) {
+    statusCode = err.statusCode || statusCode;
+    message = err.message;
+    errors = err.errors || errors;
+    code = err.code || code;
+  } else if (err.name === 'CastError') {
+    statusCode = 400;
+    message = castErrorMessage(err);
+  } else if (err.code === 11000) {
+    statusCode = 409;
+    message = duplicateKeyMessage(err.keyValue);
+  } else if (err.name === 'ValidationError' && err.errors) {
+    statusCode = 400;
+    errors = Object.values(err.errors).map((val) => ({
+      field: val.path,
+      message: val.message,
+    }));
+    message = errors.map((e) => e.message).join('; ') || 'Validation failed';
+  } else if (err.name === 'JsonWebTokenError') {
+    statusCode = 401;
+    message = 'Invalid token';
+    code = code || 'INVALID_TOKEN';
+  } else if (err.name === 'TokenExpiredError') {
+    statusCode = 401;
+    message = 'Token expired';
+    code = code || 'TOKEN_EXPIRED';
+  } else if (err.name === 'MongoServerError' && err.code === 11000) {
+    statusCode = 409;
+    message = duplicateKeyMessage(err.keyValue);
+  } else if (err.name === 'MongoError' || err.name === 'MongooseError') {
+    statusCode = 500;
+    message = process.env.NODE_ENV === 'production' ? 'Database error' : err.message;
+  } else if (err.type === 'entity.parse.failed') {
+    statusCode = 400;
+    message = 'Invalid JSON in request body';
+  } else if (statusCode >= 500 && process.env.NODE_ENV === 'production') {
+    message = 'Something went wrong. Please try again later.';
   }
 
-  // Mongoose duplicate key
-  if (err.code === 11000) {
-    const message = 'Resource already exists';
-    error = { message, statusCode: 409 };
-  }
-
-  // Mongoose validation error
-  if (err.name === 'ValidationError') {
-    const message = Object.values(err.errors).map(val => val.message).join(', ');
-    error = { message, statusCode: 400 };
-  }
-
-  // JWT errors
-  if (err.name === 'JsonWebTokenError') {
-    const message = 'Invalid token';
-    error = { message, statusCode: 401 };
-  }
-
-  if (err.name === 'TokenExpiredError') {
-    const message = 'Token expired';
-    error = { message, statusCode: 401 };
-  }
-
-  // MongoDB connection errors
-  if (err.name === 'MongoError' || err.name === 'MongooseError') {
-    const message = 'Database connection error';
-    error = { message, statusCode: 500 };
-  }
-
-  res.status(error.statusCode || 500).json({
+  const payload = {
     success: false,
-    message: error.message || 'Server Error',
-    requestId: req.requestId,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-  });
+    message,
+    ...(req.requestId ? { requestId: req.requestId } : {}),
+    ...(code ? { code } : {}),
+    ...(errors ? { errors } : {}),
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+  };
+
+  res.status(statusCode).json(payload);
 };
 
 module.exports = errorHandler;

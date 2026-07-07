@@ -403,3 +403,126 @@ export interface CabBooking {
   createdAt: string;
   updatedAt: string;
 }
+
+// Cab Operations Admin Types
+export interface CabDashboardStats {
+  totalCustomers: number;
+  totalDrivers: number;
+  totalCabRides: number;
+  totalRevenue: number;
+  totalSubscriptionRevenue: number;
+  totalRideRevenue: number;
+  activeSubscriptions: number;
+  expiredSubscriptions: number;
+  pendingVerifications: number;
+  pendingProfileVerifications: number;
+  pendingDriverDocuments: number;
+  pendingVehicles: number;
+  onlineDrivers: number;
+  activeTrips: number;
+  completedTrips: number;
+  cancelledTrips: number;
+  walletBalance: number;
+  totalWalletTransactions: number;
+  dailyRevenue: number;
+  monthlyRevenue: number;
+  yearlyRevenue: number;
+}
+
+export interface CabDriver {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  email?: string;
+  userType: string;
+  isActive: boolean;
+  isVerified: boolean;
+  cabBooking?: {
+    profileVerificationStatus?: string;
+    registrationStep?: number;
+  };
+  createdAt: string;
+}
+
+export interface CabCustomer {
+  _id: string;
+  fullName?: string;
+  email: string;
+  phone?: string;
+  status: 'active' | 'suspended';
+  rating?: number;
+  createdAt: string;
+}
+
+export interface CabRideItem {
+  _id: string;
+  rideNumber: string;
+  customerName: string;
+  customerPhone?: string;
+  status: string;
+  pickup: { address: string; lat: number; lng: number };
+  drop: { address: string; lat: number; lng: number };
+  fare: { total: number; base?: number; distance?: number };
+  driverId?: { _id: string; firstName: string; lastName: string; phoneNumber: string } | string;
+  createdAt: string;
+  completedAt?: string;
+}
+
+export interface CabSubscriptionPlan {
+  _id: string;
+  name: string;
+  slug: string;
+  amount: number;
+  durationDays: number;
+  description?: string;
+  isActive: boolean;
+  features?: string[];
+  purchaseCount?: number;
+  totalRevenue?: number;
+}
+
+export interface CabSubscription {
+  _id: string;
+  driverId: CabDriver | string;
+  planId: CabSubscriptionPlan | string;
+  planName: string;
+  amount: number;
+  status: string;
+  paymentStatus: string;
+  startDate?: string;
+  expiryDate?: string;
+  createdAt: string;
+}
+
+export interface CabWallet {
+  _id: string;
+  ownerId: string;
+  ownerType: 'Customer' | 'Driver';
+  balance: number;
+  currency: string;
+  isActive: boolean;
+  updatedAt: string;
+}
+
+export interface CabWalletTransaction {
+  _id: string;
+  ownerId: string;
+  ownerType: string;
+  type: 'credit' | 'debit';
+  purpose: string;
+  amount: number;
+  balanceBefore?: number;
+  balanceAfter?: number;
+  remark?: string;
+  createdAt: string;
+}
+
+export interface CabAdminUser {
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+}

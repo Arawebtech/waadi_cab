@@ -5,12 +5,14 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'First name is required'],
     trim: true,
+    minLength: [2, 'First name must be at least 2 characters'],
     maxLength: [50, 'First name cannot exceed 50 characters']
   },
   lastName: {
     type: String,
     required: [true, 'Last name is required'],
     trim: true,
+    minLength: [2, 'Last name must be at least 2 characters'],
     maxLength: [50, 'Last name cannot exceed 50 characters']
   },
   phoneNumber: {
@@ -27,7 +29,10 @@ const userSchema = new mongoose.Schema({
   },
   userType: {
     type: String,
-    enum: ['driver', 'owner', 'agent'],
+    enum: {
+      values: ['driver', 'owner', 'agent'],
+      message: 'User type must be driver, owner, or agent',
+    },
     required: [true, 'User type is required']
   },
   isPhoneVerified: {
@@ -69,35 +74,10 @@ const userSchema = new mongoose.Schema({
     default: null
   },
   // Additional user data
-  vehicles: [{
-    vehicleNumber: {
-      type: String,
-      required: true,
-      uppercase: true
-    },
-    seatCapacity: {
-      type: String,
-      enum: ['5(4+1)', '6(5+1)', '7(6+1)', '8(7+1)', '9(8+1)'],
-      required: true
-    },
-    isDefault: {
-      type: Boolean,
-      default: false
-    },
-    documents: [{
-      type: String,
-      docType: {
-        type: String,
-        enum: ['rc', 'insurance', 'puc', 'license']
-      }
-    }],
-    addedAt: {
-      type: Date,
-      default: Date.now
-    }
-  }],
+
   profile: {
     avatar: String,
+    public_id:String,
     address: {
       street: String,
       city: String,
@@ -125,7 +105,25 @@ const userSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
-  }
+  },
+
+
+  cabBooking: {
+    registrationStep: { type: Number, default: 1, min: 1, max: 6 },
+    profileVerificationStatus: {
+      type: String,
+      enum: ['pending', 'under_review', 'approved', 'rejected'],
+      default: 'pending',
+    },
+    profileRejectionReason: { type: String, default: null },
+    activeVehicleId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Vehicle',
+      default: null,
+    },
+    termsAcceptedAt: { type: Date, default: null },
+    onboardingCompletedAt: { type: Date, default: null },
+  },
 }, {
   timestamps: true
 });
@@ -161,6 +159,8 @@ userSchema.index({ phoneNumber: 1 });
 userSchema.index({ email: 1 }, { sparse: true }); // Sparse index allows multiple null values
 userSchema.index({ appVersion: 1 });
 userSchema.index({ platform: 1 });
+userSchema.index({ 'cabBooking.profileVerificationStatus': 1 });
+userSchema.index({ userType: 1, isActive: 1 });
 userSchema.index({ lastVersionUpdate: 1 });
 
 module.exports = mongoose.model('User', userSchema);

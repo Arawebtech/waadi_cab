@@ -9,20 +9,28 @@ import { MobileLayout } from "@/components/mobile-layout"
 import { useToast } from "@/components/ui/use-toast"
 import { profileAPI, type ProfileUser } from "@/lib/api"
 import { useAuth } from "@/components/auth-provider"
-import { User, Car, Bell, Shield, ChevronRight, LogOut, Phone, Loader2, CheckCircle, XCircle, Wifi, WifiOff, Camera, Upload, X } from "lucide-react"
+import { useConfirm } from "@/components/confirm"
+import { User, Bell, Shield, ChevronRight, LogOut, Phone, Loader2, XCircle, Wifi, WifiOff, Camera, X } from "lucide-react"
 import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capacitor/camera'
 import { Capacitor } from '@capacitor/core'
+import { useCabProfile } from '@/features/cab-booking/hooks'
+import { ActiveVehicleSection } from '@/features/profile/components/ActiveVehicleSection'
+import { ActiveSubscriptionSection } from '@/features/profile/components/ActiveSubscriptionSection'
+import { DriverRatingSection } from '@/features/profile/components/DriverRatingSection'
+import { UserDetailsSection } from '@/features/profile/components/UserDetailsSection'
 
 export default function ProfilePage() {
   const router = useRouter()
   const { toast } = useToast()
   const { logout } = useAuth()
+  const { confirmAction } = useConfirm()
   const [profile, setProfile] = useState<ProfileUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isOffline, setIsOffline] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
+  const cabProfileQuery = useCabProfile()
 
   useEffect(() => {
     // Check online/offline status
@@ -137,7 +145,7 @@ export default function ProfilePage() {
       console.error('Camera error:', error)
       
       // Handle user cancellation gracefully
-      if (error.message === 'User cancelled photos app') {
+      if (error instanceof Error && error.message === 'User cancelled photos app') {
         // User cancelled, no need to show error
         return
       }
@@ -212,7 +220,7 @@ export default function ProfilePage() {
     }
   }
 
-  const handleSignOut = async () => {
+  const performSignOut = async () => {
     try {
       // Try to call logout API if online
       if (navigator.onLine) {
@@ -252,13 +260,17 @@ export default function ProfilePage() {
     }
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+  const handleSignOut = () => {
+    confirmAction({
+      title: 'Sign out?',
+      description: 'You will need to sign in again to access your account.',
+      confirmLabel: 'Sign out',
+      cancelLabel: 'Stay signed in',
+      variant: 'danger',
+      action: performSignOut,
     })
   }
+
 
   // Loading state
   if (isLoading) {
@@ -351,9 +363,13 @@ export default function ProfilePage() {
     )
   }
 
+  const cabProfile = cabProfileQuery.data
+  const driverEmail = cabProfile?.user?.email ?? null
+  const subscriptionStatus = cabProfile?.subscription?.status ?? null
+
   return (
     <MobileLayout title="Profile">
-      <div className="px-4 py-6">
+      <div className="mx-auto max-w-2xl space-y-4 px-4 py-6 pb-28">
         {/* Hidden file input - removed for Capacitor */}
         {/* <input
           ref={fileInputRef}
@@ -377,7 +393,7 @@ export default function ProfilePage() {
         )}
 
         {/* Profile Header with Photo Upload */}
-        <Card className="mobile-card mb-6">
+        <Card className="mobile-card overflow-hidden rounded-2xl border-slate-200/80 shadow-sm transition-shadow duration-200 hover:shadow-md">
           <CardContent className="p-6 text-center">
             <div className="relative w-24 h-24 mx-auto mb-4">
               {profileImage ? (
@@ -439,59 +455,22 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Account Status */}
-        <Card className="mobile-card mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center text-lg">
-              <Shield className="h-5 w-5 mr-2" />
-              Account Status
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between py-2">
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-gray-500" />
-                <span className="font-medium">Phone Verified</span>
-              </div>
-              {profile?.isPhoneVerified ? (
-                <CheckCircle className="h-5 w-5 text-green-600" />
-              ) : (
-                <XCircle className="h-5 w-5 text-red-600" />
-              )}
-            </div>
-            <div className="text-sm text-gray-600">
-              <p>Member since: {profile?.createdAt ? formatDate(profile.createdAt) : 'N/A'}</p>
-              <p>Last login: {profile?.lastLogin ? formatDate(profile.lastLogin) : 'N/A'}</p>
-            </div>
-          </CardContent>
-        </Card>
+        <ActiveVehicleSection fallbackVehicle={cabProfile?.activeVehicle ?? null} />
 
-        {/* Vehicle Information */}
-        <Card className="mobile-card mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center text-lg">
-              <Car className="h-5 w-5 mr-2" />
-              Vehicle Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {profile?.vehicles && profile.vehicles.length > 0 ? (
-              <div className="space-y-2">
-                {profile.vehicles.map((vehicle, index) => (
-                  <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                    <p className="font-medium">{vehicle.number || vehicle.vehicleNumber || 'Vehicle'}</p>
-                    <p className="text-sm text-gray-600">{vehicle.type || 'Unknown Type'}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-600 text-center py-4">No vehicles added yet</p>
-            )}
-          </CardContent>
-        </Card>
+        <ActiveSubscriptionSection fallbackSubscription={cabProfile?.subscription ?? null} />
+
+        <DriverRatingSection />
+
+        {profile && (
+          <UserDetailsSection
+            profile={profile}
+            email={driverEmail}
+            subscriptionStatus={subscriptionStatus}
+          />
+        )}
 
         {/* Notification Preferences */}
-        <Card className="mobile-card mb-6">
+        <Card className="mobile-card overflow-hidden rounded-2xl border-slate-200/80 shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center text-lg">
               <Bell className="h-5 w-5 mr-2" />
@@ -530,7 +509,7 @@ export default function ProfilePage() {
         </Card>
 
         {/* Settings Menu */}
-        <Card className="mobile-card mb-6">
+        <Card className="mobile-card overflow-hidden rounded-2xl border-slate-200/80 shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center text-lg">
               <Shield className="h-5 w-5 mr-2" />
@@ -569,7 +548,7 @@ export default function ProfilePage() {
         </Card>
 
         {/* Logout - Always Available */}
-        <Card className="mobile-card">
+        <Card className="mobile-card overflow-hidden rounded-2xl border-slate-200/80 shadow-sm">
           <CardContent className="p-4">
             <Button 
               variant="destructive" 

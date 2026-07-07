@@ -4,7 +4,7 @@ import type React from "react"
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { Home, Receipt, History, User, ArrowLeft } from "lucide-react"
+import { Home, Receipt, History, User, ArrowLeft, CarTaxiFront } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { LanguageToggle } from "@/components/language-toggle"
 import { useLanguage } from "@/hooks/use-language"
@@ -26,6 +26,7 @@ export function MobileLayout({ children, title, showBackButton = false, backHref
   const navItems = [
     { href: "/dashboard", icon: Home, label: t("home") },
     { href: "/border-tax", icon: Receipt, label: t("tax") },
+    { href: "/cab-booking", icon: CarTaxiFront , label: t("cab") },
     { href: "/history", icon: History, label: t("history") },
     { href: "/profile", icon: User, label: t("profile") },
   ]
@@ -80,7 +81,8 @@ export function MobileLayout({ children, title, showBackButton = false, backHref
           <nav className="bottom-nav android-gesture-bar">
             <div className="flex items-center justify-around">
               {navItems.map((item) => {
-                const isActive = pathname === item.href
+                const isActive =
+                  pathname === item.href || (item.href === '/cab-booking' && pathname.startsWith('/cab-booking'))
                 return (
                   <Link key={item.href} href={item.href} className="flex-1">
                     <div className="flex flex-col items-center space-y-1 py-2 touch-target">

@@ -7,7 +7,6 @@ const morgan = require('morgan');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
-
 // Import routes
 const authRoutes = require('./src/routes/authRoutes');
 const userRoutes = require('./src/routes/userRoutes');
@@ -23,6 +22,10 @@ const pushRoutes = require('./src/routes/pushRoutes');
 const whatsappRoutes = require('./src/routes/whatsappRoutes');
 const appSettingsRoutes = require('./src/routes/appSettingsRoutes');
 const cabBookingRoutes = require('./src/routes/cabBookingRoutes');
+const cabCustomerRoutes = require('./src/cab-customer/routes');
+const cabDriverRoutes = require('./src/cab-driver/routes');
+const vehicleRoutes = require('./src/routes/vehicleRoutes');
+const subscriptionRoutes = require('./src/routes/subscriptionRoutes');
 const appVersionRoutes = require('./src/routes/appVersionRoutes');
 const versionTrackingRoutes = require('./src/routes/versionTrackingRoutes');
 const validationRoutes = require('./src/routes/validationRoutes');
@@ -35,19 +38,63 @@ const whatsappService = require('./src/services/whatsappService');
 // Import middleware
 const errorHandler = require('./src/middleware/errorHandler');
 const notFound = require('./src/middleware/notFound');
+const { sanitizeInput } = require('./src/middleware/validate.middleware');
 const correlationId = require('./src/middleware/correlationId');
 const requestLogger = require('./src/middleware/requestLogger');
 const { checkMaintenanceMode } = require('./src/middleware/maintenanceCheck');
+// const { startJobs } = require('./src/jobs');
+// const { graphQLMiddleware, createGraphQLServer } = require('./src/graphql/server');
+// const { initSocket } = require('./src/sockets');
 
 const app = express();
+
 const server = createServer(app);
+
+const allowedOrigins = [
+ "https://localhost",
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:3002",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:3001",
+  "http://127.0.0.1:3002",
+
+  "http://192.168.1.8:3001",
+  "http://192.168.1.36:3000",
+
+  "http://31.97.229.97:3001",
+  "http://31.97.229.97:3000",
+
+  "https://book.waadi.in",
+  "https://admin.waadi.in",
+  "http://localhost:4001",
+
+  "capacitor://localhost",
+
+  "https://mdk7v2f6-3000.inc1.devtunnels.ms"
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // allow server-to-server / mobile apps (no origin)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+return callback(new Error("Not allowed by CORS: " + origin));
+    },
+    credentials: true
+  })
+);
+
+
 const io = new Server(server, {
-    cors: {
-      origin: process.env.NODE_ENV === 'production' 
-        ? ['https://localhost','http://localhost:3000','https://book.waadi.in','http://localhost:3000', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3001", "https://api.waadi.in/", " https://api.waadi.in/", "http://192.168.1.36:3000", "https://book.waadi.in", 'http://localhost:3000',  "http://localhost:3000:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3002"]
-        : ['https://localhost','http://localhost:3000','https://book.waadi.in','http://localhost:3000', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3001", "https://api.waadi.in/", " https://api.waadi.in/", "http://192.168.1.36:3000", "https://book.waadi.in",  'http://localhost:3000',  "http://localhost:3000:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3002"],
-      credentials: true
-    }
+  cors: {
+    origin: allowedOrigins,
+    credentials: true
+  }
 });
 
 // Security middleware
@@ -73,20 +120,13 @@ app.use((req, res, next) => {
 });
 app.use(compression());
 
-// CORS configuration
-  app.use(cors({
-    origin: process.env.NODE_ENV === 'production' 
-      ?['https://localhost','http://localhost:3000','https://book.waadi.in', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3001", " https://api.waadi.in/", " https://api.waadi.in/", "http://192.168.1.36:3000", "https://book.waadi.in", 'http://localhost:3000', "http://localhost:3000:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3001","http://127.0.0.1:3002"]
-      : ['https://localhost','https://book.waadi.in','http://localhost:3000', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3001", " https://api.waadi.in/", " https://api.waadi.in/", "http://192.168.1.36:3000", "https://book.waadi.in", 'http://localhost:3000',  "http://localhost:3000:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3001", "http://127.0.0.1:3002"],
-    credentials: true
-  }));
+
 
 // Logging
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// Rate limiting removed
 
 
 app.use(
@@ -106,6 +146,7 @@ app.use(correlationId);
 // Raw body parser for payment callbacks (before other body parsers)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(sanitizeInput);
 
 // Structured API logging (after body parsers)
 app.use(requestLogger);
@@ -125,24 +166,18 @@ mongoose.connect(process.env.MONGODB_URI, {
 .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
 
-// Socket.IO connection handling
-io.on('connection', (socket) => {
-  console.log('🔌 Client connected:', socket.id);
-  
-  // Join admin room for real-time updates
-  socket.on('join-admin', () => {
-    socket.join('admin-room');
-    console.log('👑 Admin joined room');
-  });
-  
-  // Handle disconnection
-  socket.on('disconnect', () => {
-    console.log('🔌 Client disconnected:', socket.id);
-  });
-});
 
-// Make io available globally
-global.io = io;
+
+  // initSocket(io);
+  const { initCabDriverSocket } = require('./src/cab-driver/socket');
+  initCabDriverSocket(io);
+  app.set('io', io);
+  global.io = io;
+
+  // const apollo = await createGraphQLServer();
+  // app.use('/graphql', graphQLMiddleware(apollo));
+
+
 
 // Initialize WhatsApp service
 const initializeWhatsApp = async () => {
@@ -212,6 +247,10 @@ app.use('/api/v1/whatsapp', whatsappRoutes); // WhatsApp routes don't need maint
 app.use('/api/v1', appSettingsRoutes); // App settings routes handle their own maintenance logic
 app.use('/api/v1', insuranceInquiryRoutes);
 app.use('/api/v1', cabBookingRoutes);
+app.use('/api/v1/cab', cabCustomerRoutes);
+app.use('/api/v1/cab-driver', cabDriverRoutes);
+app.use('/api/v1/vehicles', vehicleRoutes);
+app.use('/api/v1/subscriptions', subscriptionRoutes);
 app.use('/api/v1', appVersionRoutes); // App version routes
 app.use('/api/v1', versionTrackingRoutes); // Version tracking routes
 app.use('/api/v1', validationRoutes); // Validation routes
@@ -222,6 +261,19 @@ app.use(notFound);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 4001;
+
+//  startJobs();
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(
+        `Port ${PORT} is already in use. Stop the other process or set a different PORT in backend/.env`
+      );
+    } else {
+      console.error(err);
+    }
+    process.exit(1);
+  });
 
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);

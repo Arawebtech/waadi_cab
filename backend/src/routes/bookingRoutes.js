@@ -2,32 +2,28 @@ const express = require('express');
 const router = express.Router();
 const bookingController = require('../controllers/bookingController');
 const { authenticate } = require('../middleware/auth');
+const {
+  validateBody,
+  validateQuery,
+  validateParams,
+  validateObjectId,
+  rejectEmptyBody,
+} = require('../middleware/validate.middleware');
+const {
+  createBookingBody,
+  bookingsQuery,
+  updateBookingStatusBody,
+  paymentReferenceParam,
+} = require('../validations/booking.validation');
 
-// POST /bookings - Create new booking (requires authentication)
-router.post('/', authenticate, bookingController.createBooking);
-
-// GET /bookings - List user's bookings (requires authentication)
-router.get('/', authenticate, bookingController.getBookings);
-
-// GET /bookings/stats - Get user's booking statistics (requires authentication)
+router.post('/', authenticate, rejectEmptyBody, validateBody(createBookingBody), bookingController.createBooking);
+router.get('/', authenticate, validateQuery(bookingsQuery), bookingController.getBookings);
 router.get('/stats', authenticate, bookingController.getUserBookingStats);
+router.get('/search/:paymentReference', validateParams(paymentReferenceParam), bookingController.searchBookingByPaymentReference);
+router.get('/:id', authenticate, validateObjectId('id', 'booking ID'), bookingController.getBookingById);
+router.get('/:id/pdf', validateObjectId('id', 'booking ID'), bookingController.downloadTaxSlipPdf);
+router.get('/:id/pdf-info', validateObjectId('id', 'booking ID'), bookingController.getTaxSlipPdfInfo);
+router.patch('/:id/status', authenticate, validateObjectId('id', 'booking ID'), rejectEmptyBody, validateBody(updateBookingStatusBody), bookingController.updateBookingStatus);
+router.delete('/:id', authenticate, validateObjectId('id', 'booking ID'), bookingController.deleteBooking);
 
-// GET /bookings/search/:paymentReference - Search booking by payment reference (public)
-router.get('/search/:paymentReference', bookingController.searchBookingByPaymentReference);
-
-// GET /bookings/:id - Get booking details (requires authentication)
-router.get('/:id', authenticate, bookingController.getBookingById);
-
-// GET /bookings/:id/pdf - Download tax slip PDF (public)
-router.get('/:id/pdf', bookingController.downloadTaxSlipPdf);
-
-// GET /bookings/:id/pdf-info - Get PDF info (public)
-router.get('/:id/pdf-info', bookingController.getTaxSlipPdfInfo);
-
-// PATCH /bookings/:id/status - Update booking status (requires authentication)
-router.patch('/:id/status', authenticate, bookingController.updateBookingStatus);
-
-// DELETE /bookings/:id - Delete/cancel a booking (requires authentication)
-router.delete('/:id', authenticate, bookingController.deleteBooking);
-
-module.exports = router; 
+module.exports = router;

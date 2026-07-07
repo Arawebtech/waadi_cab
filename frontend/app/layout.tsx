@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/components/auth-provider'
+import { QueryProvider } from '@/components/query-provider'
 import { NetworkProvider } from '@/components/network-provider'
 import { SafeAreaProvider } from '@/components/safe-area-provider'
 import { SafeAreaView } from '@/components/safe-area-view'
@@ -9,6 +10,7 @@ import { SafeAreaView } from '@/components/safe-area-view'
 import { NetworkStatusIndicator } from '@/components/network-status-indicator'
 import { Toaster } from '@/components/ui/toaster'
 import CapacitorInit from '@/components/capacitor-init'
+import { ConfirmProvider } from '@/components/confirm'
 import { MaintenanceProvider } from '@/components/maintenance-provider'
 import { VersionCheck } from '@/components/version-check'
 
@@ -36,6 +38,8 @@ export default function RootLayout({
             <NetworkProvider>
               <MaintenanceProvider>
                 <AuthProvider>
+                  <QueryProvider>
+                  <ConfirmProvider>
                   {/* Network Status Indicator (Development Only) */}
                   <NetworkStatusIndicator />
                   
@@ -51,6 +55,8 @@ export default function RootLayout({
                   
                   <Toaster />
                   <CapacitorInit />
+                  </ConfirmProvider>
+                  </QueryProvider>
                 </AuthProvider>
               </MaintenanceProvider>
             </NetworkProvider>

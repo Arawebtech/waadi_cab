@@ -4,7 +4,7 @@
 The admin bookings API endpoint was experiencing slow performance, taking a long time to respond to complex queries with filters, pagination, and date ranges.
 
 **Original Issue:**
-- URL: `https://api.waadi.in/api/v1/admin/bookings?page=7&limit=20&status=paid&date_from=2025-09-27&date_to=2025-09-28&date_on=createdAt&sort_by=createdAt&sort_order=desc`
+- URL: `http://localhost:4001/api/v1/admin/bookings?page=7&limit=20&status=paid&date_from=2025-09-27&date_to=2025-09-28&date_on=createdAt&sort_by=createdAt&sort_order=desc`
 - Response time: ~350-400ms (sometimes higher)
 - User experience: Timeout errors in admin dashboard
 

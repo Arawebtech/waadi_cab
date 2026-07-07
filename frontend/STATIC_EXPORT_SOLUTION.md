@@ -30,7 +30,7 @@ The error `Page "/booking/[id]/page" is missing param "/booking/WCMEJQSL6OF09TUM
 export async function generateStaticParams() {
   try {
     // Fetch all booking IDs during build time
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.waadi.in';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
     const response = await fetch(`${apiUrl}/api/bookings`);
     if (!response.ok) throw new Error('Failed to fetch bookings');
     const bookings = await response.json();
@@ -63,7 +63,7 @@ export async function generateStaticParams() {
   
   try {
     // Also try to fetch from API if available
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.waadi.in';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
     const response = await fetch(`${apiUrl}/api/bookings`);
     if (response.ok) {
       const bookings = await response.json();
@@ -110,7 +110,7 @@ If using Option 2 or 3, your build process should:
 
 Make sure these are set during build:
 ```bash
-NEXT_PUBLIC_API_URL=https://api.waadi.in
+NEXT_PUBLIC_API_URL=http://localhost:4001
 # or your production API URL
 ```
 

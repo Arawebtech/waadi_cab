@@ -47,7 +47,7 @@ const config: CapacitorConfig = {
     },
     CapacitorUpdater: {
       autoUpdate: false,
-      updateUrl: 'https://api.waadi.in/api/v1/app-version/check',
+      updateUrl: 'http://localhost:4001/api/v1/app-version/check',
     },
   },
   android: {

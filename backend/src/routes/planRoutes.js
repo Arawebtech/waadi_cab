@@ -1,20 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const planController = require('../controllers/planController');
+const {
+  validateBody,
+  validateQuery,
+  validateObjectId,
+  rejectEmptyBody,
+} = require('../middleware/validate.middleware');
+const { plansQuery, createPlanBody, updatePlanBody } = require('../validations/geo.validation');
 
-// GET /plans/types - Get all available plan types
 router.get('/types', planController.getPlanTypes);
+router.get('/', validateQuery(plansQuery), planController.getPlans);
+router.post('/', rejectEmptyBody, validateBody(createPlanBody), planController.createPlan);
+router.patch('/:id', validateObjectId('id', 'plan ID'), rejectEmptyBody, validateBody(updatePlanBody), planController.updatePlan);
+router.patch('/:id/toggle', validateObjectId('id', 'plan ID'), planController.togglePlan);
 
-// GET /plans?vehicle_type_id=... - Get plans by vehicle type
-router.get('/', planController.getPlans);
-
-// POST /plans - Add a new plan
-router.post('/', planController.createPlan);
-
-// PATCH /plans/:id - Update plan
-router.patch('/:id', planController.updatePlan);
-
-// PATCH /plans/:id/toggle - Toggle is_active status
-router.patch('/:id/toggle', planController.togglePlan);
-
-module.exports = router; 
+module.exports = router;

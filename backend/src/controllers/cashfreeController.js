@@ -671,6 +671,19 @@ class CashfreeController {
       .populate('user', 'firstName lastName email phoneNumber');
 
     if (!booking) {
+      const CabRide = require('../models/CabRide');
+      const ride = await CabRide.findOne({ 'paymentDetails.transactionId': orderId });
+      if (ride) {
+        if (ride.paymentStatus === 'paid') return;
+        const ridePaymentSettlement = require('../cab-services/ridePaymentSettlement.service');
+        await ridePaymentSettlement.settleOnlinePayment(ride._id, {
+          transactionId: orderId,
+          gateway: 'cashfree',
+          gatewayPaymentId: paymentData.cf_payment_id?.toString() || '',
+          amount: parseFloat(orderData.order_amount),
+        });
+        return;
+      }
       console.warn('⚠️  Cashfree webhook: no booking for order_id:', orderId);
       return;
     }

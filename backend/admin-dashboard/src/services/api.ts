@@ -15,11 +15,24 @@ import {
   PlanForm,
   District,
   VehicleType,
-  Plan
+  Plan,
+  CabSubscription,
+  CabSubscriptionPlan,
+  CabDashboardStats,
+  CabDriver,
+  CabCustomer,
+  CabRideItem,
+  CabWallet,
+  CabWalletTransaction,
+  CabAdminUser,
 } from '../types';
 
 // Base URL for API
-const BASE_URL = process.env.REACT_APP_API_URL || 'https://api.waadi.in/api/v1';
+const BASE_URL =
+  process.env.REACT_APP_API_URL ||
+  (process.env.REACT_APP_BASE_URL
+    ? `${String(process.env.REACT_APP_BASE_URL).replace(/\/$/, '')}/api/v1`
+    : 'http://localhost:4001/api/v1');
 
 // Create axios instance
 const api = axios.create({
@@ -570,6 +583,206 @@ export class AdminAPI {
 
   static async toggleAppVersionActive(id: string): Promise<any> {
     const response = await api.put<ApiResponse<any>>(`/admin/app-versions/${id}/toggle-active`);
+    return response.data.data;
+  }
+
+  // ── Cab Operations Admin ──────────────────────────────────────────────
+
+  static async getCabDashboardStats(): Promise<CabDashboardStats> {
+    const response = await api.get<ApiResponse<CabDashboardStats>>('/admin/cab/dashboard');
+    return response.data.data;
+  }
+
+  static async getCabReports(period = '30d') {
+    const response = await api.get(`/admin/cab/reports?period=${period}`);
+    return response.data.data;
+  }
+
+  static async getCabDrivers(filters: { page?: number; limit?: number; search?: string; status?: string } = {}) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => { if (v !== undefined && v !== '') params.append(k, String(v)); });
+    const response = await api.get<ApiResponse<CabDriver[]>>(`/admin/cab/drivers?${params}`);
+    return { drivers: response.data.data, pagination: response.data.pagination! };
+  }
+
+  static async updateCabDriver(id: string, data: Record<string, unknown>) {
+    const response = await api.patch<ApiResponse<CabDriver>>(`/admin/cab/drivers/${id}`, data);
+    return response.data.data;
+  }
+
+  static async verifyCabDriverProfile(id: string, status: string, reason?: string) {
+    const response = await api.patch(`/admin/cab/drivers/${id}/profile-verification`, { status, reason });
+    return response.data.data;
+  }
+
+  static async getCabCustomers(filters: { page?: number; limit?: number; search?: string; status?: string } = {}) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => { if (v !== undefined && v !== '') params.append(k, String(v)); });
+    const response = await api.get<ApiResponse<CabCustomer[]>>(`/admin/cab/customers?${params}`);
+    return { customers: response.data.data, pagination: response.data.pagination! };
+  }
+
+  static async getCabCustomerDetails(id: string) {
+    const response = await api.get(`/admin/cab/customers/${id}`);
+    return response.data.data;
+  }
+
+  static async getCabRides(filters: { page?: number; limit?: number; status?: string; search?: string; category?: string } = {}) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => { if (v !== undefined && v !== '') params.append(k, String(v)); });
+    const response = await api.get<ApiResponse<CabRideItem[]>>(`/admin/cab/rides?${params}`);
+    return { rides: response.data.data, pagination: response.data.pagination! };
+  }
+
+  static async getCabSubscriptions(filters: { page?: number; limit?: number; status?: string } = {}) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => { if (v !== undefined && v !== '') params.append(k, String(v)); });
+    const response = await api.get<ApiResponse<CabSubscription[]>>(`/admin/cab/subscriptions?${params}`);
+    return { subscriptions: response.data.data, pagination: response.data.pagination! };
+  }
+
+  static async getCabSubscriptionHistory(filters: { page?: number; limit?: number; action?: string } = {}) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => { if (v !== undefined && v !== '') params.append(k, String(v)); });
+    const response = await api.get(`/admin/cab/subscription-history?${params}`);
+    return { history: response.data.data, pagination: response.data.pagination };
+  }
+
+  static async getCabSubscriptionPlans(filters: { page?: number; limit?: number; search?: string; isActive?: string } = {}) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => { if (v !== undefined && v !== '') params.append(k, String(v)); });
+    const response = await api.get<ApiResponse<CabSubscriptionPlan[]>>(`/admin/cab/subscription-plans?${params}`);
+    return { plans: response.data.data, pagination: response.data.pagination! };
+  }
+
+  static async createCabSubscriptionPlan(data: Partial<CabSubscriptionPlan>) {
+    const response = await api.post('/admin/cab/subscription-plans', data);
+    return response.data.data;
+  }
+
+  static async updateCabSubscriptionPlan(id: string, data: Partial<CabSubscriptionPlan>) {
+    const response = await api.put(`/admin/cab/subscription-plans/${id}`, data);
+    return response.data.data;
+  }
+
+  static async toggleCabSubscriptionPlan(id: string, isActive: boolean) {
+    const response = await api.patch(`/admin/cab/subscription-plans/${id}/status`, { isActive });
+    return response.data.data;
+  }
+
+  static async deleteCabSubscriptionPlan(id: string) {
+    const response = await api.delete(`/admin/cab/subscription-plans/${id}`);
+    return response.data.data;
+  }
+
+  static async expireCabSubscription(id: string) {
+    const response = await api.patch(`/admin/cab/subscriptions/${id}/expire`);
+    return response.data.data;
+  }
+
+  static async getCabWallets(filters: { page?: number; limit?: number; ownerType?: string } = {}) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => { if (v !== undefined && v !== '') params.append(k, String(v)); });
+    const response = await api.get<ApiResponse<CabWallet[]>>(`/admin/cab/wallets?${params}`);
+    return { wallets: response.data.data, pagination: response.data.pagination! };
+  }
+
+  static async getCabWalletTransactions(filters: { page?: number; limit?: number; type?: string; purpose?: string; ownerType?: string } = {}) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => { if (v !== undefined && v !== '') params.append(k, String(v)); });
+    const response = await api.get<ApiResponse<CabWalletTransaction[]>>(`/admin/cab/wallet-transactions?${params}`);
+    return { transactions: response.data.data, pagination: response.data.pagination! };
+  }
+
+  static async getCabPendingVerifications() {
+    const response = await api.get('/admin/cab/verifications/pending');
+    return response.data.data;
+  }
+
+  static async verifyCabDocument(id: string, status: 'approved' | 'rejected', reason?: string) {
+    const response = await api.patch(`/admin/cab/documents/${id}/verify`, { status, reason });
+    return response.data.data;
+  }
+
+  static async verifyCabVehicle(id: string, status: 'approved' | 'rejected', reason?: string) {
+    const response = await api.patch(`/admin/cab/vehicles/${id}/verify`, { status, reason });
+    return response.data.data;
+  }
+
+  static async getCabAdmins() {
+    const response = await api.get<ApiResponse<CabAdminUser[]>>('/admin/cab/admins');
+    return response.data.data;
+  }
+
+  static async createCabAdmin(data: { name: string; email: string; password: string; role: string }) {
+    const response = await api.post('/admin/cab/admins', data);
+    return response.data.data;
+  }
+
+  static async updateCabAdmin(id: string, data: Partial<CabAdminUser & { password?: string }>) {
+    const response = await api.put(`/admin/cab/admins/${id}`, data);
+    return response.data.data;
+  }
+
+  static async deleteCabAdmin(id: string) {
+    await api.delete(`/admin/cab/admins/${id}`);
+  }
+
+  static async getCabDriverDetails(id: string) {
+    const response = await api.get(`/admin/cab/drivers/${id}/details`);
+    return response.data.data;
+  }
+
+  static async getCabVehicleDetails(id: string) {
+    const response = await api.get(`/admin/cab/vehicles/${id}/details`);
+    return response.data.data;
+  }
+
+  static async getCabDocumentDetails(id: string) {
+    const response = await api.get(`/admin/cab/documents/${id}/details`);
+    return response.data.data;
+  }
+
+  static async requestCabDocumentReupload(id: string, reason?: string) {
+    const response = await api.patch(`/admin/cab/documents/${id}/reupload`, { reason });
+    return response.data.data;
+  }
+
+  static async getCabRideDetails(id: string) {
+    const response = await api.get(`/admin/cab/rides/${id}/details`);
+    return response.data.data;
+  }
+
+  static async cancelCabRide(id: string, reason?: string) {
+    const response = await api.patch(`/admin/cab/rides/${id}/cancel`, { reason });
+    return response.data.data;
+  }
+
+  static async getCabLiveFleet(filters: { driverStatus?: string; vehicleType?: string; rideStatus?: string } = {}) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => { if (v) params.append(k, v); });
+    const response = await api.get(`/admin/cab/fleet/live?${params}`);
+    return response.data.data;
+  }
+
+  static async deleteCabDocument(id: string) {
+    const response = await api.delete(`/admin/cab/documents/${id}`);
+    return response.data.data;
+  }
+
+  static async getCabVerificationHistory(filters: Record<string, unknown> = {}) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => { if (v !== undefined && v !== '') params.append(k, String(v)); });
+    const response = await api.get(`/admin/cab/verifications/history?${params}`);
+    return { history: response.data.data, pagination: response.data.pagination };
+  }
+
+  static async deleteCabVerificationHistory(id: string) {
+    await api.delete(`/admin/cab/verifications/history/${id}`);
+  }
+
+  static async reverifyCabVerification(id: string) {
+    const response = await api.post(`/admin/cab/verifications/history/${id}/reverify`);
     return response.data.data;
   }
 

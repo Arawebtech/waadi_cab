@@ -1,271 +1,311 @@
 import React, { useState } from 'react';
+
 import { Outlet, Link, useLocation } from 'react-router-dom';
+
+import { motion, AnimatePresence } from 'framer-motion';
+
 import {
-  LayoutDashboard,
-  Users,
-  Calendar,
-  MapPin,
-  CreditCard,
-  Settings,
-  Menu,
-  X,
-  BarChart3,
-  Car,
-  Package,
-  MessageCircle,
-  Bell,
-  Power,
-  Download,
-  ScrollText
+
+  LayoutDashboard, Users, Calendar, MapPin, CreditCard, Settings, Menu, X,
+
+  BarChart3, Car, Package, MessageCircle, Bell, Power, Download, ScrollText,
+
+  ShieldCheck, Wallet, UserCog, Navigation, ChevronLeft, ChevronRight, Moon, Sun, Radio
+
 } from 'lucide-react';
+
 import { useAuth } from './AuthContext';
 
+import { useTheme } from '../context/ThemeContext';
+
+
+
 interface SidebarItem {
+
   name: string;
+
   path: string;
+
   icon: React.ComponentType<{ className?: string }>;
-  description: string;
+
+  section?: string;
+
 }
 
+
+
 const sidebarItems: SidebarItem[] = [
-  {
-    name: 'Dashboard',
-    path: '/',
-    icon: LayoutDashboard,
-    description: 'Overview & Analytics'
-  },
-  {
-    name: 'Bookings',
-    path: '/bookings',
-    icon: Calendar,
-    description: 'Manage all bookings'
-  },
-  {
-    name: 'Users',
-    path: '/users',
-    icon: Users,
-    description: 'User management'
-  },
-  {
-    name: 'States & Districts',
-    path: '/states',
-    icon: MapPin,
-    description: 'Location management'
-  },
-  {
-    name: 'Vehicle Types',
-    path: '/vehicle-types',
-    icon: Car,
-    description: 'Manage vehicle types'
-  },
-  {
-    name: 'Plans & Pricing',
-    path: '/plans',
-    icon: Package,
-    description: 'Pricing management'
-  },
-  {
-    name: 'WhatsApp',
-    path: '/whatsapp',
-    icon: MessageCircle,
-    description: 'WhatsApp management'
-  },
-  {
-    name: 'Insurance Inquiries',
-    path: '/insurance-inquiries',
-    icon: CreditCard,
-    description: 'Insurance booking inquiries'
-  },
-  {
-    name: 'Cab Bookings',
-    path: '/cab-bookings',
-    icon: Car,
-    description: 'Manage cab booking requests'
-  },
-  {
-    name: 'Notifications',
-    path: '/notifications',
-    icon: Bell,
-    description: 'Send push notifications'
-  },
-  {
-    name: 'App Status',
-    path: '/app-status',
-    icon: Power,
-    description: 'Turn app on/off & maintenance'
-  },
-  {
-    name: 'App Versions',
-    path: '/app-versions',
-    icon: Download,
-    description: 'Manage OTA updates'
-  },
-  {
-    name: 'Analytics',
-    path: '/analytics',
-    icon: BarChart3,
-    description: 'Detailed reports'
-  },
-  {
-    name: 'Settings',
-    path: '/settings',
-    icon: Settings,
-    description: 'System settings'
-  },
-    {
-    name: 'CustomerLogs',
-    path: '/customer-logs',
-    icon: Settings,
-    description: 'CustomerLogs'
-  },
-  {
-    name: 'Audit Trail',
-    path: '/audit-trail',
-    icon: ScrollText,
-    description: 'Booking & payment audit logs'
-  },
-     {
-    name: 'Payment Change',
-    path: '/payment-change',
-    icon: Settings,
-    description: 'Payment Change'
-  }
+
+  { name: 'Dashboard', path: '/', icon: LayoutDashboard, section: 'Border Tax' },
+
+  { name: 'Bookings', path: '/bookings', icon: Calendar, section: 'Border Tax' },
+
+  { name: 'Users', path: '/users', icon: Users, section: 'Border Tax' },
+
+  { name: 'States & Districts', path: '/states', icon: MapPin, section: 'Border Tax' },
+
+  { name: 'Vehicle Types', path: '/vehicle-types', icon: Car, section: 'Border Tax' },
+
+  { name: 'Plans & Pricing', path: '/plans', icon: Package, section: 'Border Tax' },
+
+  { name: 'WhatsApp', path: '/whatsapp', icon: MessageCircle, section: 'Border Tax' },
+
+  { name: 'Insurance', path: '/insurance-inquiries', icon: CreditCard, section: 'Border Tax' },
+
+  { name: 'Cab Bookings', path: '/cab-bookings', icon: Car, section: 'Border Tax' },
+
+  { name: 'Cab Dashboard', path: '/cab-operations', icon: LayoutDashboard, section: 'Cab Ops' },
+
+  { name: 'Live Fleet', path: '/cab-live-fleet', icon: Radio, section: 'Cab Ops' },
+
+  { name: 'Cab Drivers', path: '/cab-drivers', icon: Car, section: 'Cab Ops' },
+
+  { name: 'Cab Customers', path: '/cab-customers', icon: Users, section: 'Cab Ops' },
+
+  { name: 'Cab Rides', path: '/cab-rides', icon: Navigation, section: 'Cab Ops' },
+
+  { name: 'Subscriptions', path: '/cab-subscriptions', icon: CreditCard, section: 'Cab Ops' },
+
+  { name: 'Wallets', path: '/cab-wallets', icon: Wallet, section: 'Cab Ops' },
+
+  { name: 'Verifications', path: '/cab-verifications', icon: ShieldCheck, section: 'Cab Ops' },
+  { name: 'Verification History', path: '/cab-verifications/history', icon: ScrollText, section: 'Cab Ops' },
+
+  { name: 'Cab Reports', path: '/cab-reports', icon: BarChart3, section: 'Cab Ops' },
+
+  { name: 'Cab Admins', path: '/cab-admins', icon: UserCog, section: 'Cab Ops' },
+
+  { name: 'Notifications', path: '/notifications', icon: Bell, section: 'System' },
+
+  { name: 'App Status', path: '/app-status', icon: Power, section: 'System' },
+
+  { name: 'App Versions', path: '/app-versions', icon: Download, section: 'System' },
+
+  { name: 'Analytics', path: '/analytics', icon: BarChart3, section: 'System' },
+
+  { name: 'Settings', path: '/settings', icon: Settings, section: 'System' },
+
+  { name: 'Customer Logs', path: '/customer-logs', icon: ScrollText, section: 'System' },
+
+  { name: 'Audit Trail', path: '/audit-trail', icon: ScrollText, section: 'System' },
+
+  { name: 'Payment Gateway', path: '/payment-change', icon: Settings, section: 'System' },
+
 ];
 
+
+
 const Layout: React.FC = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const [collapsed, setCollapsed] = useState(false);
+
   const location = useLocation();
+
   const { logout } = useAuth();
 
+  const { isDark, toggleTheme } = useTheme();
+
+
+
   const isActivePath = (path: string) => {
-    if (path === '/') {
-      return location.pathname === '/';
-    }
-    return location.pathname.startsWith(path);
+    if (path === '/') return location.pathname === '/';
+    if (path === '/cab-verifications') return location.pathname === '/cab-verifications';
+    return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };
 
+
+
+  const activeItem = sidebarItems.find(item => isActivePath(item.path));
+
+  const sections = Array.from(new Set(sidebarItems.map(i => i.section)));
+
+
+
+  const sidebarWidth = collapsed ? 'w-[72px]' : 'w-64';
+
+
+
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
+
+    <div className="h-screen overflow-hidden flex bg-slate-100 dark:bg-slate-950">
+
+      {mobileOpen && (
+
+        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setMobileOpen(false)} />
+
       )}
 
-      {/* Sidebar */}
-      <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 flex flex-col ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+
+
+      <aside
+
+        className={`fixed lg:static inset-y-0 left-0 z-50 ${sidebarWidth} flex flex-col border-r border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl transition-all duration-300 ease-in-out ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+
       >
-        {/* Sidebar header */}
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 flex-shrink-0">
-          <h1 className="text-xl font-bold text-gray-900">Wadi Cab Admin</h1>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-gray-500 hover:text-gray-700"
-          >
-            <X className="w-6 h-6" />
+
+        <div className="flex items-center justify-between h-16 px-4 border-b border-slate-200/80 dark:border-slate-800 flex-shrink-0">
+
+          {!collapsed && <h1 className="text-lg font-bold text-slate-900 dark:text-white truncate">Wadi Cab</h1>}
+
+          <button onClick={() => setCollapsed(!collapsed)} className="hidden lg:flex p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500">
+
+            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+
           </button>
+
+          <button onClick={() => setMobileOpen(false)} className="lg:hidden p-2 text-slate-500"><X className="h-5 w-5" /></button>
+
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 mt-6 px-3 overflow-y-auto">
-          <div className="space-y-1">
-            {sidebarItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = isActivePath(item.path);
-              
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setSidebarOpen(false)}
-                  className={`group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  <Icon
-                    className={`mr-3 h-5 w-5 transition-colors duration-200 ${
-                      isActive ? 'text-blue-700' : 'text-gray-400 group-hover:text-gray-600'
-                    }`}
-                  />
-                  <div className="flex-1">
-                    <div className="font-medium">{item.name}</div>
-                    <div className="text-xs text-gray-500 mt-0.5">{item.description}</div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+
+
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3 px-2 scrollbar-thin">
+
+          {sections.map(section => (
+
+            <div key={section} className="mb-4">
+
+              {!collapsed && section && (
+
+                <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">{section}</p>
+
+              )}
+
+              <div className="space-y-0.5">
+
+                {sidebarItems.filter(i => i.section === section).map(item => {
+
+                  const Icon = item.icon;
+
+                  const active = isActivePath(item.path);
+
+                  return (
+
+                    <Link
+
+                      key={item.path}
+
+                      to={item.path}
+
+                      onClick={() => setMobileOpen(false)}
+
+                      title={collapsed ? item.name : undefined}
+
+                      className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${active ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'}`}
+
+                    >
+
+                      <Icon className={`h-5 w-5 flex-shrink-0 ${active ? 'text-white' : 'text-slate-400 group-hover:text-slate-600'}`} />
+
+                      {!collapsed && <span className="truncate">{item.name}</span>}
+
+                    </Link>
+
+                  );
+
+                })}
+
+              </div>
+
+            </div>
+
+          ))}
+
         </nav>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-gray-200 flex-shrink-0">
-          <div className="text-center text-xs text-gray-500">
-            <div>Wadi Cab Admin Panel</div>
-            <div className="mt-1">v1.0.0</div>
-          </div>
-        </div>
-      </div>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Top header */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="flex items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-            <div className="flex items-center">
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="lg:hidden text-gray-500 hover:text-gray-700 mr-4"
-              >
-                <Menu className="w-6 h-6" />
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {sidebarItems.find(item => isActivePath(item.path))?.name || 'Dashboard'}
-                </h1>
-                <p className="text-sm text-gray-600">
-                  {sidebarItems.find(item => isActivePath(item.path))?.description || 'Welcome to admin dashboard'}
-                </p>
-              </div>
+
+        <div className="p-3 border-t border-slate-200/80 dark:border-slate-800 flex-shrink-0">
+
+          {!collapsed && <p className="text-center text-[10px] text-slate-400">v2.0 · Cab Admin</p>}
+
+        </div>
+
+      </aside>
+
+
+
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+
+        <header className="flex-shrink-0 h-16 border-b border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between z-10">
+
+          <div className="flex items-center gap-3 min-w-0">
+
+            <button onClick={() => setMobileOpen(true)} className="lg:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
+
+              <Menu className="h-5 w-5" />
+
+            </button>
+
+            <div className="min-w-0">
+
+              <h1 className="text-lg font-bold text-slate-900 dark:text-white truncate">{activeItem?.name || 'Dashboard'}</h1>
+
             </div>
-            
-            <div className="flex items-center space-x-4">
-              {/* Notification button */}
-            
-              
-              {/* Admin profile */}
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">A</span>
-                </div>
-                <div className="hidden md:block">
-                  <div className="text-sm font-medium text-gray-900">Admin User</div>
-                  <div className="text-xs text-gray-500">admin@wadicab.com</div>
-                </div>
-                <button
-                  onClick={logout}
-                  className="ml-2 text-sm text-gray-600 hover:text-gray-900 border px-2 py-1 rounded-md"
-                >
-                  Logout
-                </button>
-              </div>
-            </div>
+
           </div>
+
+          <div className="flex items-center gap-2">
+
+            <button onClick={toggleTheme} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors" title="Toggle theme">
+
+              {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+
+            </button>
+
+            <div className="hidden md:flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-700">
+
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-sm font-bold">A</div>
+
+              <button onClick={logout} className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">Logout</button>
+
+            </div>
+
+          </div>
+
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
-          <Outlet />
+
+
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+
+          <AnimatePresence mode="wait">
+
+            <motion.div
+
+              key={location.pathname}
+
+              initial={{ opacity: 0, y: 8 }}
+
+              animate={{ opacity: 1, y: 0 }}
+
+              exit={{ opacity: 0, y: -8 }}
+
+              transition={{ duration: 0.2 }}
+
+              className="h-full"
+
+            >
+
+              <Outlet />
+
+            </motion.div>
+
+          </AnimatePresence>
+
         </main>
+
       </div>
+
     </div>
+
   );
+
 };
 
-export default Layout; 
+
+
+export default Layout;
+

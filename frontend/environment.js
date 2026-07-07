@@ -1,5 +1,5 @@
 function normalizeApiBaseUrl(raw) {
-  const fallback = 'https://api.waadi.in/api/v1'
+  const fallback = 'http://localhost:4001/api/v1'
   const trimmed = (raw || fallback).trim().replace(/\/+$/, '')
   if (trimmed.endsWith('/api/v1')) return trimmed
   return `${trimmed}/api/v1`

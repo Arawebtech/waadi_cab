@@ -20,8 +20,8 @@ test_search() {
     echo "Search term: '$search_term'"
     
     # Make the API call and get response
-    local response=$(curl -s "https://api.waadi.in/api/v1/admin/bookings?page=1&limit=10&search=$search_term")
-    local http_code=$(curl -s -w "%{http_code}" -o /dev/null "https://api.waadi.in/api/v1/admin/bookings?page=1&limit=10&search=$search_term")
+    local response=$(curl -s "http://localhost:4001/api/v1/admin/bookings?page=1&limit=10&search=$search_term")
+    local http_code=$(curl -s -w "%{http_code}" -o /dev/null "http://localhost:4001/api/v1/admin/bookings?page=1&limit=10&search=$search_term")
     
     if [ "$http_code" = "200" ]; then
         # Extract result count from JSON response
@@ -78,7 +78,7 @@ test_search "NONEXISTENT123" "Non-existent search term" 0
 echo -e "\n${YELLOW}8. Testing Combined Search with Filters${NC}"
 today=$(date +%Y-%m-%d)
 curl -s -w "Response time: %{time_total}s\nHTTP Code: %{http_code}\n" \
-  "https://api.waadi.in/api/v1/admin/bookings?page=1&limit=5&search=UP16&status=paid&date_from=$today&date_to=$today" \
+  "http://localhost:4001/api/v1/admin/bookings?page=1&limit=5&search=UP16&status=paid&date_from=$today&date_to=$today" \
   | tail -2
 
 echo -e "\n${GREEN}✅ Enhanced search functionality tests completed!${NC}"

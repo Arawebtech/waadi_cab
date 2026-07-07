@@ -20,7 +20,8 @@ const bookingSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Vehicle number is required'],
     trim: true,
-    uppercase: true
+    uppercase: true,
+    match: [/^[A-Z]{2}[0-9]{1,2}[A-Z]{1,2}[0-9]{4}$/, 'Invalid vehicle number format'],
   },
   seat_capacity: {
     type: String,
@@ -30,7 +31,8 @@ const bookingSchema = new mongoose.Schema({
   whatsapp_number: {
     type: String,
     required: [true, 'WhatsApp number is required'],
-    trim: true
+    trim: true,
+    match: [/^[6-9]\d{9}$/, 'Please enter a valid 10-digit WhatsApp number'],
   },
   entry_border: {
     type: String,
@@ -40,7 +42,10 @@ const bookingSchema = new mongoose.Schema({
   tax_mode: {
     type: String,
     required: [true, 'Tax mode is required'],
-    enum: ['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly', 'Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7', 'Day 8', 'Day 9', 'Day 10', 'Day 11', 'Day 12', 'Day 13', 'Day 14', 'Day 15', 'Day 16', 'Day 17', 'Day 18', 'Day 19', 'Day 20'],
+    enum: {
+      values: ['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly', 'Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7', 'Day 8', 'Day 9', 'Day 10', 'Day 11', 'Day 12', 'Day 13', 'Day 14', 'Day 15', 'Day 16', 'Day 17', 'Day 18', 'Day 19', 'Day 20'],
+      message: 'Invalid tax mode',
+    },
     trim: true
   },
   tax_from_date: {
@@ -58,7 +63,10 @@ const bookingSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'paid', 'cancelled'],
+    enum: {
+      values: ['pending', 'paid', 'cancelled'],
+      message: 'Status must be pending, paid, or cancelled',
+    },
     default: 'pending'
   },
   payment_id: {
@@ -67,7 +75,10 @@ const bookingSchema = new mongoose.Schema({
   },
   payment_status: {
     type: String,
-    enum: ['pending', 'paid', 'failed'],
+    enum: {
+      values: ['pending', 'paid', 'failed'],
+      message: 'Payment status must be pending, paid, or failed',
+    },
     default: 'pending',
     index: true
   },

@@ -186,7 +186,7 @@ server {
 
     # Proxy to Node.js application
     location / {
-        proxy_pass  https://api.waadi.in/;
+        proxy_pass  http://localhost:4001/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -200,7 +200,7 @@ server {
 
     # Health check endpoint
     location /health {
-        proxy_pass  https://api.waadi.in/health;
+        proxy_pass  http://localhost:4001/health;
         access_log off;
     }
 }
