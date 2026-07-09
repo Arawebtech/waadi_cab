@@ -9,22 +9,22 @@ android {
         targetCompatibility rootProject.ext.javaVersion
     }
 
-        signingConfigs {
-        release {
-            storeFile file("upload-keystore.jks")
-            storePassword "@iamsoftwaremaker"
-            keyAlias "upload"
-            keyPassword "@iamsoftwaremaker"
-        }
-    }
+    //     signingConfigs {
+    //     release {
+    //         storeFile file("upload-keystore.jks")
+    //         storePassword "@iamsoftwaremaker"
+    //         keyAlias "upload"
+    //         keyPassword "@iamsoftwaremaker"
+    //     }
+    // }
 
     
     defaultConfig {
         applicationId "com.MP.Waadi_App"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 46
-        versionName "46"
+        versionCode 47
+        versionName "46.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -32,18 +32,18 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
-    // buildTypes {
-    //     release {
-    //         minifyEnabled false
-    //         proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-    //     }
-    // }
-      buildTypes {
+    buildTypes {
         release {
-            signingConfig signingConfigs.release   // ⭐ IMPORTANT LINE
             minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    //   buildTypes {
+    //     release {
+    //         signingConfig signingConfigs.release   // ⭐ IMPORTANT LINE
+    //         minifyEnabled false
+    //     }
+    // }
 }
 
 repositories {

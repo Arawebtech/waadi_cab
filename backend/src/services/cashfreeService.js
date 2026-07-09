@@ -251,6 +251,73 @@ class CashfreeService {
     }
   }
 
+  _normalizePaymentsList(data) {
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.payments)) return data.payments;
+    return [];
+  }
+
+  /**
+   * Resolve Cashfree payment tracking fields from webhook payload and/or order APIs.
+   */
+  async resolvePaymentTrackingDetails(orderId, context = {}) {
+    const { verification, webhookPayment, webhookOrder } = context;
+
+    let paymentTransactionId = webhookPayment?.cf_payment_id?.toString() || null;
+    let bankReference =
+      webhookPayment?.bank_reference !== undefined && webhookPayment?.bank_reference !== null
+        ? String(webhookPayment.bank_reference)
+        : null;
+    let cashfreeOrderId =
+      webhookOrder?.cf_order_id?.toString() ||
+      verification?.cashfreeOrderId?.toString() ||
+      verification?.rawData?.cf_order_id?.toString() ||
+      null;
+
+    try {
+      const paymentsResult = await this.getOrderPayments(orderId);
+      const payments = this._normalizePaymentsList(paymentsResult.payments);
+      const successPayment =
+        payments.find((p) => (p.payment_status || '').toUpperCase() === 'SUCCESS') ||
+        payments[0];
+
+      if (successPayment) {
+        paymentTransactionId =
+          paymentTransactionId || successPayment.cf_payment_id?.toString() || null;
+        if (bankReference === null) {
+          bankReference =
+            successPayment.bank_reference !== undefined && successPayment.bank_reference !== null
+              ? String(successPayment.bank_reference)
+              : null;
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Cashfree resolvePaymentTrackingDetails payments fetch failed:', error.message);
+    }
+
+    return {
+      payment_transaction_id: paymentTransactionId || null,
+      bank_reference: bankReference ?? null,
+      cashfree_order_id: cashfreeOrderId || null,
+    };
+  }
+
+  applyPaymentTrackingToBooking(booking, tracking) {
+    if (!booking || !tracking) return;
+
+    booking.payment_details = booking.payment_details || {};
+
+    if (tracking.payment_transaction_id) {
+      booking.payment_details.payment_transaction_id = tracking.payment_transaction_id;
+    }
+
+    booking.payment_details.bank_reference = tracking.bank_reference ?? null;
+
+    if (tracking.cashfree_order_id) {
+      booking.payment_details.cashfree_order_id = tracking.cashfree_order_id;
+    }
+  }
+
   verifyWebhookSignature(rawBody, signature, timestamp) {
     try {
       const secret = this.webhookSecret || process.env.CASHFREE_WEBHOOK_SECRET;

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -11,7 +11,9 @@ import { useLanguage } from "@/hooks/use-language"
 import { useToast } from "@/components/ui/use-toast"
 import { historyAPI, type HistoryBooking } from "@/lib/api"
 import { downloadPdf, getPdfFilename } from "@/lib/pdf-download"
+import { base_url } from "@/environment"
 import { Search, Eye, Calendar, Loader2, Download, FileText } from "lucide-react"
+import { useBookingRealtimeRefresh } from "@/hooks/use-booking-realtime"
 
 export default function HistoryPage() {
   const { t } = useLanguage()
@@ -33,7 +35,7 @@ export default function HistoryPage() {
     fetchBookings()
   }, [])
 
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async () => {
     try {
       setIsLoading(true)
       // Only fetch paid bookings
@@ -59,7 +61,24 @@ export default function HistoryPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [toast])
+
+  useBookingRealtimeRefresh(
+    useCallback(({ booking, bookingId }) => {
+      if (booking && booking.status === 'paid') {
+        setBookings((prev) => {
+          const id = String(booking._id || bookingId)
+          const exists = prev.some((b) => b._id === id)
+          if (exists) {
+            return prev.map((b) => (b._id === id ? { ...b, ...booking } as HistoryBooking : b))
+          }
+          return [booking as HistoryBooking, ...prev]
+        })
+        return
+      }
+      fetchBookings()
+    }, [fetchBookings])
+  )
 
   const getPassStatus = (fromDate: string, uptoDate: string): string => {
     const today = new Date()
@@ -133,7 +152,7 @@ export default function HistoryPage() {
     try {
       setDownloadingPdfs(prev => new Set(prev).add(booking._id));
       
-      const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL || 'https://api.waadi.in'}/api/v1/bookings/${booking._id}/pdf`;
+      const pdfUrl = `${base_url}/bookings/${booking._id}/pdf`;
       const filename = getPdfFilename(booking);
       
       await downloadPdf({

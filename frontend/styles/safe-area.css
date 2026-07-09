@@ -1,18 +1,57 @@
 /* Safe Area Utilities for Mobile Navigation */
-/* Prevents phone navigation bar from overlapping app content */
 
-/* CSS Custom Properties for safe areas */
 :root {
   --safe-area-inset-top: env(safe-area-inset-top, 0px);
   --safe-area-inset-right: env(safe-area-inset-right, 0px);
   --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-inset-left: env(safe-area-inset-left, 0px);
-  
-  /* Additional bottom padding for navigation bars */
+  --app-safe-area-top: env(safe-area-inset-top, 0px);
+  --app-safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --navigation-safe-bottom: max(env(safe-area-inset-bottom, 0px), 20px);
 }
 
-/* Safe area container */
+/*
+ * Capacitor shell — no global top padding (headers handle top inset once).
+ */
+html.capacitor-native .app-shell {
+  box-sizing: border-box;
+  min-height: 100dvh;
+  padding-top: 0;
+}
+
+/*
+ * Sticky/fixed top bars: pad once when --app-safe-area-top > 0 (Android 15 edge-to-edge).
+ * When native window reserves status bar space, --app-safe-area-top stays 0 → no extra gap.
+ */
+html.capacitor-native.capacitor-android .mobile-header,
+html.capacitor-native.capacitor-android header.sticky,
+html.capacitor-native.capacitor-android .sticky.top-0 {
+  top: 0;
+  padding-top: var(--app-safe-area-top, env(safe-area-inset-top, 0px));
+  box-sizing: border-box;
+}
+
+html.capacitor-native.capacitor-android .public-page {
+  padding-top: var(--app-safe-area-top, env(safe-area-inset-top, 0px));
+  box-sizing: border-box;
+}
+
+/*
+ * iOS: edge-to-edge — pad sticky/fixed top bars and public pages once.
+ */
+html.capacitor-native.capacitor-ios .mobile-header,
+html.capacitor-native.capacitor-ios header.sticky,
+html.capacitor-native.capacitor-ios .sticky.top-0 {
+  top: 0;
+  padding-top: var(--app-safe-area-top, env(safe-area-inset-top, 0px));
+  box-sizing: border-box;
+}
+
+html.capacitor-native.capacitor-ios .public-page {
+  padding-top: var(--app-safe-area-top, env(safe-area-inset-top, 0px));
+  box-sizing: border-box;
+}
+
 .safe-area-container {
   padding-top: var(--safe-area-inset-top);
   padding-right: var(--safe-area-inset-right);
@@ -20,73 +59,58 @@
   padding-left: var(--safe-area-inset-left);
 }
 
-/* Safe area top only */
 .safe-area-top {
   padding-top: var(--safe-area-inset-top);
 }
 
-/* Safe area bottom only (for navigation bars) */
 .safe-area-bottom {
   padding-bottom: var(--navigation-safe-bottom);
 }
 
-/* Safe area left only */
 .safe-area-left {
   padding-left: var(--safe-area-inset-left);
 }
 
-/* Safe area right only */
 .safe-area-right {
   padding-right: var(--safe-area-inset-right);
 }
 
-/* Full safe area (all sides) */
 .safe-area-all {
   padding: var(--safe-area-inset-top) var(--safe-area-inset-right) var(--navigation-safe-bottom) var(--safe-area-inset-left);
 }
 
-/* Mobile-specific safe area adjustments */
 @media (max-width: 768px) {
-  /* Increase bottom padding on mobile for better navigation bar clearance */
   :root {
     --navigation-safe-bottom: max(env(safe-area-inset-bottom, 0px), 30px);
   }
-  
-  /* Additional mobile-specific adjustments */
+
   .mobile-safe-bottom {
     padding-bottom: calc(var(--navigation-safe-bottom) + 10px);
   }
 }
 
-/* Android-specific adjustments */
 @supports (-webkit-touch-callout: none) {
-  /* iOS devices */
   .ios-safe-area {
     padding-bottom: max(env(safe-area-inset-bottom, 0px), 34px);
   }
 }
 
-/* Android gesture navigation bar adjustments */
 .android-gesture-bar {
   padding-bottom: max(env(safe-area-inset-bottom, 0px), 40px);
 }
 
-/* Floating action buttons and bottom navigation */
 .floating-bottom {
   bottom: var(--navigation-safe-bottom);
 }
 
-/* Bottom sheet and modals */
 .bottom-sheet {
   padding-bottom: var(--navigation-safe-bottom);
 }
 
-/* Tab navigation */
 .tab-navigation {
   padding-bottom: var(--navigation-safe-bottom);
 }
 
-/* Fixed bottom elements */
 .fixed-bottom {
   position: fixed;
   bottom: 0;
@@ -98,20 +122,6 @@
   z-index: 50;
 }
 
-/* Status bar height compensation */
-.status-bar-compensation {
-  padding-top: calc(var(--safe-area-inset-top) + 20px);
-}
-
-/* Navigation bar height compensation */
 .nav-bar-compensation {
   padding-bottom: calc(var(--navigation-safe-bottom) + 20px);
 }
-
-
-
-
-
-
-
-

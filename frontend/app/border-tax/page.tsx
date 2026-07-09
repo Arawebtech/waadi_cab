@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { MobileLayout } from "@/components/mobile-layout"
+import { LanguageToggle } from "@/components/language-toggle"
 import { useToast } from "@/components/ui/use-toast"
 import { borderTaxAPI, bookingAPI, validationAPI, historyAPI, tokenManager, type State, type VehicleType, type District, type Plan, type BookingRequest, type BookingValidationRequest } from "@/lib/api"
 import { useMaintenanceContext } from "@/components/maintenance-provider"
@@ -1427,7 +1428,7 @@ export default function BorderTaxPage() {
       <MobileLayout 
         title="Secure Payment" 
         showBackButton 
-        backHref="#"
+        backHref="/border-tax"
       >
         <div className="px-4 py-6">
           <PaymentIntegration
@@ -1461,19 +1462,25 @@ export default function BorderTaxPage() {
   return (
     <div className="min-h-screen bg-gray-50 w-full overflow-x-hidden">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center">
-          <button onClick={() => router.back()} className="mr-3">
+      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-start justify-between sticky top-0 z-10">
+        <div className="flex items-start">
+          <button onClick={() => router.back()} className="mr-3 mt-1">
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <h1 className="text-lg font-semibold">Border Tax Payment</h1>
+        <div className="flex flex-col">
+        <h1 className="text-lg font-semibold">Border Tax Payment</h1>
+        <a href="tel:9518410151" className="text-xs text-gray-500">Support Number: <span className="text-blue-500">9518410151</span></a>
         </div>
-        <button
-          onClick={resetForm}
-          className="text-sm text-gray-600 hover:text-gray-800 px-3 py-1 rounded border hover:bg-gray-50 transition-colors"
-        >
-          Reset Form
-        </button>
+        </div>
+        {/* <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={resetForm}
+            className="text-sm text-gray-600 hover:text-gray-800 px-3 py-1 rounded border hover:bg-gray-50 transition-colors"
+          >
+            Reset Form
+          </button>
+          <LanguageToggle />
+        </div> */}
       </div>
 
   

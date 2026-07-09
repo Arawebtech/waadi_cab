@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { useAuth } from "@/components/auth-provider"
 import { historyAPI, type BookingDetail } from '@/lib/api'
 import { downloadPdf, getPdfFilename } from '@/lib/pdf-download'
+import { base_url } from '@/environment'
 import { downloadInvoice } from '@/lib/invoice-generator'
 import {
   Calendar,
@@ -27,6 +28,7 @@ import {
   FileText,
   Receipt
 } from "lucide-react"
+import { useBookingRealtimeRefresh } from "@/hooks/use-booking-realtime"
 
 export default function BookingDetailPage() {
   const router = useRouter()
@@ -96,6 +98,25 @@ export default function BookingDetailPage() {
       fetchBooking()
     }
   }, [bookingId, isAuthenticated, authLoading])
+
+  useBookingRealtimeRefresh(
+    useCallback(({ booking, bookingId: updatedId }) => {
+      const targetId = bookingId
+      const incomingId = String(booking?._id || updatedId || '')
+      if (!targetId || !incomingId || incomingId !== targetId) return
+
+      if (booking) {
+        setBooking((prev) => (prev ? { ...prev, ...booking } as BookingDetail : booking as BookingDetail))
+        return
+      }
+
+      historyAPI.getBookingById(targetId).then((result) => {
+        if (result.success) {
+          setBooking(result.data)
+        }
+      })
+    }, [bookingId])
+  )
 
   // Show loading while checking authentication
   if (authLoading) {
@@ -226,7 +247,7 @@ export default function BookingDetailPage() {
     try {
       setDownloadingPdf(true);
       
-      const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL || 'https://api.waadi.in'}/api/v1/bookings/${booking._id}/pdf`;
+      const pdfUrl = `${base_url}/bookings/${booking._id}/pdf`;
       const filename = getPdfFilename(booking);
       
       await downloadPdf({ url: pdfUrl, filename });
@@ -465,12 +486,20 @@ export default function BookingDetailPage() {
                 <span className="font-semibold text-lg">{formatCurrency(booking.amount)}</span>
               </div>
               
-              {booking.payment_details?.transaction_id && (
+              {/* {booking.payment_details?.transaction_id && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Transaction ID</span>
                   <span className="font-mono text-sm">{booking.payment_details.transaction_id}</span>
                 </div>
-              )}
+              )} */}
+
+{booking.payment_details?.transaction_id && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500 mb-2">Transaction ID</h4>
+                    <p className="text-gray-900 font-mono text-sm">{booking.payment_details.transaction_id}</p>
+                  </div>
+                )}
+
             </div>
           </CardContent>
         </Card>

@@ -1,11 +1,14 @@
-function normalizeApiBaseUrl(raw) {
-  const fallback = 'https://api.waadi.in/api/v1'
-  const trimmed = (raw || fallback).trim().replace(/\/+$/, '')
-  if (trimmed.endsWith('/api/v1')) return trimmed
-  return `${trimmed}/api/v1`
+function normalizeApiHost(raw) {
+  const fallback = 'https://api.waadi.in'
+  let trimmed = (raw || fallback).trim().replace(/\/+$/, '')
+  if (trimmed.endsWith('/api/v1')) {
+    trimmed = trimmed.slice(0, -'/api/v1'.length).replace(/\/+$/, '')
+  }
+  return trimmed
 }
 
-export const base_url = normalizeApiBaseUrl(process.env.NEXT_PUBLIC_API_URL)
+export const api_url = normalizeApiHost(process.env.NEXT_PUBLIC_API_URL)
+export const base_url = `${api_url}/api/v1`
 
 // Frontend URL configuration
 export const frontend_url = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://book.waadi.in"

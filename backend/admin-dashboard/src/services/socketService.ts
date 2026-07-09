@@ -1,6 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || process.env.REACT_APP_API_URL?.replace('/api/v1', '') || 'https://api.waadi.in/';
+const SOCKET_URL = (process.env.REACT_APP_SOCKET_URL || process.env.REACT_APP_API_URL?.replace('/api/v1', '') || 'https://api.waadi.in').replace(/\/+$/, '');
 
 class SocketService {
   private socket: Socket | null = null;
@@ -58,6 +58,18 @@ class SocketService {
   onBookingDeleted(callback: (data: any) => void) {
     if (this.socket) {
       this.socket.on('booking-deleted', callback);
+    }
+  }
+
+  onPaymentVerified(callback: (data: any) => void) {
+    if (this.socket) {
+      this.socket.on('payment-verified', callback);
+    }
+  }
+
+  offPaymentVerified() {
+    if (this.socket) {
+      this.socket.off('payment-verified');
     }
   }
 

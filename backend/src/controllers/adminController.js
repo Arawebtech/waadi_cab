@@ -9,6 +9,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const saveCustomerLog = require('../utils/saveCustomerLog');
+const { emitTaxSlipReady } = require('../utils/socketEvents');
 
 // Configure multer for PDF uploads
 const storage = multer.diskStorage({
@@ -225,7 +226,10 @@ class AdminController {
         date_to = '',
         date_on = 'createdAt',
         sort_by = 'createdAt',
-        sort_order = 'desc'
+        sort_order = 'desc',
+        payment_transaction_id = '',
+        bank_reference = '',
+        cashfree_order_id = '',
       } = req.query;
 
       // Build filter object
@@ -255,8 +259,33 @@ class AdminController {
           // Payment reference search
           { 'payment_details.payment_reference': searchRegex },
           // Transaction ID search
-          { 'payment_details.transaction_id': searchRegex }
+          { 'payment_details.transaction_id': searchRegex },
+          // Cashfree gateway tracking fields
+          { 'payment_details.payment_transaction_id': searchRegex },
+          { 'payment_details.bank_reference': searchRegex },
+          { 'payment_details.cashfree_order_id': searchRegex },
         ];
+      }
+
+      if (payment_transaction_id) {
+        filter['payment_details.payment_transaction_id'] = {
+          $regex: payment_transaction_id,
+          $options: 'i',
+        };
+      }
+
+      if (bank_reference) {
+        filter['payment_details.bank_reference'] = {
+          $regex: bank_reference,
+          $options: 'i',
+        };
+      }
+
+      if (cashfree_order_id) {
+        filter['payment_details.cashfree_order_id'] = {
+          $regex: cashfree_order_id,
+          $options: 'i',
+        };
       }
 
       if (status) filter.status = status;
@@ -1380,6 +1409,14 @@ class AdminController {
       };
 
       await booking.save();
+
+      await booking.populate([
+        { path: 'visiting_state', select: 'name' },
+        { path: 'user', select: 'firstName lastName phoneNumber email' },
+      ]);
+
+      // Real-time update for admin panel + mobile app
+      emitTaxSlipReady(booking);
 
       // Send push notification to customer
       try {

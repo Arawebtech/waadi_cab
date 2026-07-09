@@ -75,7 +75,13 @@ const bookingSchema = new mongoose.Schema({
     transaction_id: String,
     payment_method: String,
     paid_at: Date,
-    payment_reference: String
+    payment_reference: String,
+    /** Cashfree cf_payment_id (gateway payment transaction ID) */
+    payment_transaction_id: { type: String, default: null },
+    /** Cashfree bank_reference / UTR when provided by the gateway */
+    bank_reference: { type: String, default: null },
+    /** Cashfree cf_order_id */
+    cashfree_order_id: { type: String, default: null },
   },
   validity: {
     valid_from: Date,
@@ -115,6 +121,9 @@ bookingSchema.index({ tax_from_date: 1, tax_upto_date: 1 });
 bookingSchema.index({ user: 1, createdAt: -1 });
 bookingSchema.index({ 'validity.valid_until': 1, 'validity.is_expired': 1 });
 bookingSchema.index({ 'payment_details.transaction_id': 1 });
+bookingSchema.index({ 'payment_details.payment_transaction_id': 1 });
+bookingSchema.index({ 'payment_details.bank_reference': 1 });
+bookingSchema.index({ 'payment_details.cashfree_order_id': 1 });
 bookingSchema.index({ payment_id: 1 });
 bookingSchema.index({ payment_status: 1 });
 bookingSchema.index({ processed_by_admin: 1 });

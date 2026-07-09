@@ -54,7 +54,7 @@ fi
 # Wait for dashboard to be ready
 echo "⏳ Waiting for dashboard to be ready..."
 for i in {1..30}; do
-    if curl -s -f http://localhost:3000 > /dev/null 2>&1; then
+    if curl -s -f https://book.waadi.in > /dev/null 2>&1; then
         echo "✅ Dashboard is ready!"
         break
     fi
@@ -66,7 +66,7 @@ echo ""
 echo "🎉 All services started successfully!"
 echo "====================================="
 echo "Backend API: https://api.waadi.in"
-echo "Admin Dashboard: http://localhost:3000"
+echo "Admin Dashboard: https://book.waadi.in"
 echo ""
 echo "To check service status, run: ./check-services.sh"
 echo "To view logs:"

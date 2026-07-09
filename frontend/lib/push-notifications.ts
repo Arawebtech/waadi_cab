@@ -1,5 +1,7 @@
 import { PushNotifications } from '@capacitor/push-notifications'
 import { Capacitor } from '@capacitor/core'
+import { base_url } from '../environment'
+import { dispatchBookingUpdated } from './socket-service'
 
 export interface PushNotificationData {
   title: string
@@ -80,6 +82,15 @@ class PushNotificationService {
       console.log('📱 Notification body:', notification.body)
       console.log('📱 Notification data:', notification.data)
       console.log('📱 Notification ID:', notification.id)
+
+      const data = notification.data || {}
+      const type = (data.type || '').toString()
+      if (type === 'tax_slip_ready') {
+        dispatchBookingUpdated({
+          bookingId: data.bookingId,
+          source: 'push-tax-slip-ready',
+        })
+      }
       
       // Show local notification
       this.showLocalNotification({
@@ -106,7 +117,7 @@ class PushNotificationService {
 
   private async sendTokenToBackend(token: string): Promise<void> {
     try {
-      const response = await fetch('/api/v1/push/register', {
+      const response = await fetch(`${base_url}/push/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -215,7 +226,7 @@ class PushNotificationService {
     console.log('🧪 Is initialized:', this.isInitialized)
     
     try {
-      const response = await fetch('/api/v1/push/test-notification', {
+      const response = await fetch(`${base_url}/push/test-notification`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -252,7 +263,7 @@ class PushNotificationService {
         return
       }
       
-      const response = await fetch('/api/v1/push/update-token', {
+      const response = await fetch(`${base_url}/push/update-token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

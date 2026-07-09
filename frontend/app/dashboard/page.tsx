@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
@@ -9,12 +9,14 @@ import { useLanguage } from "@/hooks/use-language"
 import { useToast } from "@/components/ui/use-toast"
 import { dashboardAPI, type DashboardResponse, type RecentActivity, type ActivePass, cabAPI, type CabBookingPublic, ApiError, tokenManager, historyAPI } from "@/lib/api"
 import { downloadPdf, getPdfFilename } from '@/lib/pdf-download'
+import { base_url } from '@/environment'
 import { downloadInvoice } from '@/lib/invoice-generator'
-import { Receipt, Calendar, CreditCard, Car, History, Bell, ChevronRight, ShoppingCart, Loader2, MapPin, Clock, Download, FileText, Share2, Youtube } from "lucide-react"
+import { Receipt, Calendar, CreditCard, Car, History, Bell, ChevronRight, ShoppingCart, Loader2, MapPin, Clock, Download, FileText, Share2, Youtube, Phone, MessageCircle } from "lucide-react"
 import { useMaintenanceContext } from "@/components/maintenance-provider"
 import { DisabledBorderTaxButton } from "@/components/disabled-border-tax-button"
 import VersionTracker from "@/components/version-tracker"
 import { Capacitor } from "@capacitor/core"
+import { useBookingRealtimeRefresh } from "@/hooks/use-booking-realtime"
 
 export default function DashboardPage() {
   const { t } = useLanguage()
@@ -33,12 +35,7 @@ export default function DashboardPage() {
   // Get user data for version tracking
   const userData = tokenManager.getUserData()
 
-  useEffect(() => {
-    fetchDashboardData()
-    fetchCabBookings()
-  }, [])
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setIsLoading(true)
       const result = await dashboardAPI.fetchDashboard()
@@ -85,7 +82,18 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [isBorderTaxMaintenance, toast])
+
+  useBookingRealtimeRefresh(
+    useCallback(() => {
+      fetchDashboardData()
+    }, [fetchDashboardData])
+  )
+
+  useEffect(() => {
+    fetchDashboardData()
+    fetchCabBookings()
+  }, [fetchDashboardData])
 
   const fetchCabBookings = async () => {
     try {
@@ -163,7 +171,7 @@ export default function DashboardPage() {
         bookingId: activity.bookingId,
         tax_slip_pdf: activity.tax_slip_pdf
       })
-      const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL || 'https://api.waadi.in'}/api/v1/bookings/${activity.id}/pdf`
+      const pdfUrl = `${base_url}/bookings/${activity.id}/pdf`
       await downloadPdf({ url: pdfUrl, filename })
       
       toast({
@@ -406,27 +414,63 @@ export default function DashboardPage() {
             description="Service will be available at 5:00 AM. We are available 7 days a week."
           />
         ) : (
+          // <Link href="/border-tax">
+          //   <Card className="mb-6 bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 transition-all duration-200 active:scale-95">
+          //     <CardContent className="p-6">
+          //       <div className="flex items-center justify-between">
+          //         <div className="flex items-center space-x-4 flex-1">
+          //           <div className="bg-white/20 p-3 rounded-full flex-shrink-0">
+          //             <ShoppingCart className="h-6 w-6 text-white" />
+          //           </div>
+          //           <div className="flex-1 min-w-0">
+          //             <h3 className="text-lg font-bold text-white mb-1">{t("payBorderTaxAlert")}</h3>
+          //             <p className="text-blue-100 text-sm">{t("payBorderTaxDesc")}</p>
+          //           </div>
+          //         </div>
+          //         <div className="flex items-center space-x-2 flex-shrink-0 ml-4">
+          //           <span className="text-white font-semibold text-sm">{t("payNow")}</span>
+          //           <ChevronRight className="h-5 w-5 text-white" />
+          //         </div>
+          //       </div>
+          //     </CardContent>
+          //   </Card>
+          // </Link>
           <Link href="/border-tax">
-            <Card className="mb-6 bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 transition-all duration-200 active:scale-95">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4 flex-1">
-                    <div className="bg-white/20 p-3 rounded-full flex-shrink-0">
-                      <ShoppingCart className="h-6 w-6 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-bold text-white mb-1">{t("payBorderTaxAlert")}</h3>
-                      <p className="text-blue-100 text-sm">{t("payBorderTaxDesc")}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2 flex-shrink-0 ml-4">
-                    <span className="text-white font-semibold text-sm">{t("payNow")}</span>
-                    <ChevronRight className="h-5 w-5 text-white" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+  <Card className="mb-6 bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 transition-all duration-200 active:scale-95 rounded-xl overflow-hidden">
+    <CardContent className="p-4 sm:p-6">
+      <div className="flex items-center justify-between gap-3">
+        
+        {/* Left Section */}
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="bg-white/20 p-3 rounded-full flex-shrink-0">
+            <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+          </div>
+
+          <div className="min-w-0">
+            <h3 className="text-base sm:text-lg font-bold text-white mb-1 truncate">
+              {t("payBorderTaxAlert")}
+            </h3>
+
+            <p className="text-blue-100 text-xs sm:text-sm line-clamp-2">
+              {t("payBorderTaxDesc")}
+            </p>
+          </div>
+        </div>
+
+
+        {/* Right Action */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <span className="text-white font-semibold text-xs sm:text-sm  xs:block">
+            {t("payNow")}
+          </span>
+
+          <ChevronRight className="h-5 w-5 text-white" />
+        </div>
+
+      </div>
+    </CardContent>
+  </Card>
+</Link>
         )}
 
         {/* Welcome Section */}
@@ -593,11 +637,11 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Quick Actions */}
+       
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">{t("quickActions")}</h3>
           <div className="space-y-3">
-            <Link href="/insurance-inquiry">
+            {/* <Link href="/insurance-inquiry">
               <Card className="p-4 active:bg-gray-50 transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
@@ -612,8 +656,77 @@ export default function DashboardPage() {
                   <ChevronRight className="h-5 w-5 text-gray-400" />
                 </div>
               </Card>
-            </Link>
-         
+            </Link> */}
+
+<Card className="p-4 active:bg-gray-50 transition-all rounded-xl border hover:shadow-md">
+  <div className="flex flex-col gap-4">
+
+    {/* Header */}
+    <Link href="/insurance-inquiry">
+      <div className="flex items-center justify-between cursor-pointer">
+        <div className="flex items-center gap-3">
+          <div className="bg-indigo-600 p-3 rounded-xl">
+            <CreditCard className="h-5 w-5 text-white" />
+          </div>
+
+          <div>
+            <p className="font-bold text-gray-900">
+              Car Insurance / कार इंश्योरेंस
+            </p>
+
+            <p className="text-sm text-gray-600">
+              Protect your vehicle easily / अपनी गाड़ी को सुरक्षित रखें
+            </p>
+          </div>
+        </div>
+
+        <ChevronRight className="h-5 w-5 text-gray-400" />
+      </div>
+    </Link>
+
+
+    {/* Duration Plans */}
+    <div className="flex gap-2 flex-wrap">
+      <span className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-medium">
+        3 Months / 3 महीने
+      </span>
+
+      <span className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-medium">
+        6 Months / 6 महीने
+      </span>
+
+      <span className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-medium">
+        1 Year / 1 साल
+      </span>
+    </div>
+
+
+    {/* Contact Options */}
+    <div className="flex gap-3">
+
+      <a
+        href="tel:7027449797"
+        className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium"
+      >
+        <Phone className="h-4 w-4" />
+        Contact / संपर्क करें
+      </a>
+
+
+      <a
+        href="https://wa.me/7027449797"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white py-2 rounded-lg text-sm font-medium"
+      >
+        <MessageCircle className="h-4 w-4" />
+        WhatsApp
+      </a>
+
+    </div>
+
+  </div>
+</Card>
             <Link href="/history">
               <Card className="p-4 active:bg-gray-50 transition-colors">
                 <div className="flex items-center justify-between">
@@ -656,7 +769,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Active Passes */}
+     
         {activePasses.length > 0 && (
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
@@ -694,8 +807,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Recent Activity */}
-        {recentActivity.length > 0 && (
+
+        {/* {recentActivity.length > 0 && (
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4">{t("recentActivity")}</h3>
             <div className="space-y-3">
@@ -752,7 +865,7 @@ export default function DashboardPage() {
               ))}
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Empty state when no data */}
         {activePasses.length === 0 && recentActivity.length === 0 && (

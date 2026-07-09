@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { pushNotificationService } from '@/lib/push-notifications';
+import { base_url } from '@/environment';
 import { toast } from '@/components/ui/use-toast';
 
 export default function PushNotificationTest() {
@@ -60,7 +61,7 @@ export default function PushNotificationTest() {
   const sendTestNotification = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/v1/push/send-to-all', {
+      const response = await fetch(`${base_url}/push/send-to-all`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

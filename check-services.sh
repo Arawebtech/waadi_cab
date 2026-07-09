@@ -15,9 +15,9 @@ fi
 # Check Admin Dashboard
 echo ""
 echo "🖥️  Admin Dashboard (Port 3000):"
-if curl -s -f http://localhost:3000 > /dev/null; then
+if curl -s -f https://book.waadi.in > /dev/null; then
     echo "✅ Admin dashboard is running"
-    echo "   Response time: $(curl -s -w "%{time_total}s" http://localhost:3000 -o /dev/null)"
+    echo "   Response time: $(curl -s -w "%{time_total}s" https://book.waadi.in -o /dev/null)"
 else
     echo "❌ Admin dashboard is not responding"
 fi
@@ -46,5 +46,5 @@ echo ""
 echo "🚀 Services Status Summary:"
 echo "=========================="
 echo "Backend: $(curl -s -f https://api.waadi.in/health > /dev/null && echo "✅ Running" || echo "❌ Not Running")"
-echo "Dashboard: $(curl -s -f http://localhost:3000 > /dev/null && echo "✅ Running" || echo "❌ Not Running")"
+echo "Dashboard: $(curl -s -f https://book.waadi.in > /dev/null && echo "✅ Running" || echo "❌ Not Running")"
 echo "API: $(curl -s -f https://api.waadi.in/api/v1/admin/dashboard > /dev/null && echo "✅ Working" || echo "❌ Not Working")"

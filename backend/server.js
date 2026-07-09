@@ -41,14 +41,58 @@ const { checkMaintenanceMode } = require('./src/middleware/maintenanceCheck');
 
 const app = express();
 const server = createServer(app);
+
+
+
+// Allowed Origins
+const allowedOrigins = [
+  'https://localhost',
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3002',
+
+  'https://book.waadi.in',
+  'https://admin.waadi.in',
+  'https://api.waadi.in',
+
+  'http://192.168.1.8:3001',
+  'http://192.168.1.36:3000',
+  'http://31.97.229.97:3001',
+  'http://31.97.229.97:3000',
+  'http://31.97.229.97:3002',
+
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+  'http://127.0.0.1:3002',
+
+  'https://book.waadi.in',
+  'https://book.waadi.in:3001'
+];
+
+
+// Socket.IO
 const io = new Server(server, {
-    cors: {
-      origin: process.env.NODE_ENV === 'production' 
-        ? ['https://localhost','http://localhost:3000','https://book.waadi.in','http://localhost:3000', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3001", "https://api.waadi.in/", " https://api.waadi.in/", "http://192.168.1.36:3000", "https://book.waadi.in", 'http://localhost:3000',  "http://localhost:3000:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3002"]
-        : ['https://localhost','http://localhost:3000','https://book.waadi.in','http://localhost:3000', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3001", "https://api.waadi.in/", " https://api.waadi.in/", "http://192.168.1.36:3000", "https://book.waadi.in",  'http://localhost:3000',  "http://localhost:3000:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3002"],
-      credentials: true
-    }
+  cors: {
+    origin: allowedOrigins,
+    credentials: true
+  }
 });
+
+
+// Express CORS
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
+
+// const io = new Server(server, {
+//     cors: {
+//       origin: process.env.NODE_ENV === 'production' 
+//         ? ['https://localhost','http://localhost:3000','https://book.waadi.in','https://admin.waadi.in','https://book.waadi.in','http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3001", "https://api.waadi.in", "http://192.168.1.36:3000", "http://127.0.0.1:3000", "http://127.0.0.1:3001","http://127.0.0.1:3002"]
+//         : ['https://localhost','http://localhost:3000','https://book.waadi.in','https://admin.waadi.in','https://book.waadi.in','http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3001", "https://api.waadi.in", "http://192.168.1.36:3000", "http://127.0.0.1:3000", "http://127.0.0.1:3001", "http://127.0.0.1:3002"],
+//       credentials: true
+//     }
+// });
 
 // Security middleware
 const helmetMiddleware = helmet({
@@ -74,12 +118,12 @@ app.use((req, res, next) => {
 app.use(compression());
 
 // CORS configuration
-  app.use(cors({
-    origin: process.env.NODE_ENV === 'production' 
-      ?['https://localhost','http://localhost:3000','https://book.waadi.in', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3001", " https://api.waadi.in/", " https://api.waadi.in/", "http://192.168.1.36:3000", "https://book.waadi.in", 'http://localhost:3000', "http://localhost:3000:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3001","http://127.0.0.1:3002"]
-      : ['https://localhost','https://book.waadi.in','http://localhost:3000', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3001", " https://api.waadi.in/", " https://api.waadi.in/", "http://192.168.1.36:3000", "https://book.waadi.in", 'http://localhost:3000',  "http://localhost:3000:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3001", "http://127.0.0.1:3002"],
-    credentials: true
-  }));
+  // app.use(cors({
+  //   origin: process.env.NODE_ENV === 'production' 
+  //     ?['https://localhost','https://book.waadi.in','https://book.waadi.in', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3001", " https://api.waadi.in/", " https://api.waadi.in/", "http://192.168.1.36:3000", "https://book.waadi.in", 'https://book.waadi.in', "https://book.waadi.in:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3001","http://127.0.0.1:3002"]
+  //     : ['https://localhost','https://book.waadi.in','https://book.waadi.in', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3001", " https://api.waadi.in/", " https://api.waadi.in/", "http://192.168.1.36:3000", "https://book.waadi.in", 'https://book.waadi.in',  "https://book.waadi.in:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3001", "http://127.0.0.1:3002"],
+  //   credentials: true
+  // }));
 
 // Logging
 if (process.env.NODE_ENV === 'development') {
@@ -133,6 +177,14 @@ io.on('connection', (socket) => {
   socket.on('join-admin', () => {
     socket.join('admin-room');
     console.log('👑 Admin joined room');
+  });
+
+  // Mobile app users join a private room for booking/document updates
+  socket.on('join-user', (payload = {}) => {
+    const userId = payload.userId || payload;
+    if (!userId) return;
+    socket.join(`user-${userId}`);
+    console.log('📱 User joined room:', userId);
   });
   
   // Handle disconnection

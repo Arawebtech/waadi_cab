@@ -63,64 +63,64 @@ const Bookings: React.FC = () => {
   const navigate = useNavigate();
 
   // Sound notification refs
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const lastSoundAtRef = useRef<number>(0);
+  // const audioRef = useRef<HTMLAudioElement | null>(null);
+  // const lastSoundAtRef = useRef<number>(0);
 
-  // Preload notification sound
-  useEffect(() => {
-    try {
-      const url = new URL('./bell-notification.wav', import.meta.url).toString();
-      audioRef.current = new Audio(url);
-      audioRef.current.preload = 'auto';
-      audioRef.current.volume = 0.6;
-    } catch (e) {
-      console.warn('Failed to preload notification sound');
-    }
-  }, []);
+  // // Preload notification sound
+  // useEffect(() => {
+  //   try {
+  //     const url = new URL('./bell-notification.wav', import.meta.url).toString();
+  //     audioRef.current = new Audio(url);
+  //     audioRef.current.preload = 'auto';
+  //     audioRef.current.volume = 0.6;
+  //   } catch (e) {
+  //     console.warn('Failed to preload notification sound');
+  //   }
+  // }, []);
 
   // Continuous ringing while there are unread bookings
-  useEffect(() => {
-    const hasUnread = unreadBookingIds.size > 0;
-    if (hasUnread) {
-      // Start interval if not already running
-      if (ringIntervalRef.current == null) {
-        ringIntervalRef.current = window.setInterval(() => {
-          playNotificationSound();
-        }, 6000);
-      }
-    } else {
-      // Stop interval when no unread
-      if (ringIntervalRef.current != null) {
-        window.clearInterval(ringIntervalRef.current);
-        ringIntervalRef.current = null;
-      }
-    }
-    return () => {
-      if (ringIntervalRef.current != null && unreadBookingIds.size === 0) {
-        window.clearInterval(ringIntervalRef.current);
-        ringIntervalRef.current = null;
-      }
-    };
-  }, [unreadBookingIds]);
+  // useEffect(() => {
+  //   const hasUnread = unreadBookingIds.size > 0;
+  //   if (hasUnread) {
+  //     // Start interval if not already running
+  //     if (ringIntervalRef.current == null) {
+  //       ringIntervalRef.current = window.setInterval(() => {
+  //         playNotificationSound();
+  //       }, 6000);
+  //     }
+  //   } else {
+  //     // Stop interval when no unread
+  //     if (ringIntervalRef.current != null) {
+  //       window.clearInterval(ringIntervalRef.current);
+  //       ringIntervalRef.current = null;
+  //     }
+  //   }
+  //   return () => {
+  //     if (ringIntervalRef.current != null && unreadBookingIds.size === 0) {
+  //       window.clearInterval(ringIntervalRef.current);
+  //       ringIntervalRef.current = null;
+  //     }
+  //   };
+  // }, [unreadBookingIds]);
 
-  const playNotificationSound = () => {
-    try {
-      const now = Date.now();
-      if (now - lastSoundAtRef.current < 1500) return; // throttle
-      lastSoundAtRef.current = now;
+  // const playNotificationSound = () => {
+  //   try {
+  //     const now = Date.now();
+  //     if (now - lastSoundAtRef.current < 1500) return; // throttle
+  //     lastSoundAtRef.current = now;
 
-      if (audioRef.current) {
-        // Restart from beginning for successive plays
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-        void audioRef.current.play().catch(() => {
-          // Autoplay may be blocked until user interacts
-        });
-      }
-    } catch (e) {
-      console.warn('Notification sound blocked or failed');
-    }
-  };
+  //     if (audioRef.current) {
+  //       // Restart from beginning for successive plays
+  //       audioRef.current.pause();
+  //       audioRef.current.currentTime = 0;
+  //       void audioRef.current.play().catch(() => {
+  //         // Autoplay may be blocked until user interacts
+  //       });
+  //     }
+  //   } catch (e) {
+  //     console.warn('Notification sound blocked or failed');
+  //   }
+  // };
 
   // Check if a booking matches current UI filters
   const matchesFilters = (booking: Booking): boolean => {
@@ -177,12 +177,35 @@ const Bookings: React.FC = () => {
           booking.user?.firstName,
           booking.user?.lastName,
           booking.user?.phoneNumber,
+          booking.payment_details?.transaction_id,
+          booking.payment_details?.payment_transaction_id,
+          booking.payment_details?.bank_reference,
+          booking.payment_details?.cashfree_order_id,
+          booking.payment_details?.payment_reference,
         ]
           .filter(Boolean)
           .map(String)
           .join(' ')
           .toLowerCase();
         if (!haystack.includes(q)) return false;
+      }
+
+      if (filters.payment_transaction_id?.trim()) {
+        const q = filters.payment_transaction_id.trim().toLowerCase();
+        const value = (booking.payment_details?.payment_transaction_id || '').toLowerCase();
+        if (!value.includes(q)) return false;
+      }
+
+      if (filters.bank_reference?.trim()) {
+        const q = filters.bank_reference.trim().toLowerCase();
+        const value = (booking.payment_details?.bank_reference || '').toLowerCase();
+        if (!value.includes(q)) return false;
+      }
+
+      if (filters.cashfree_order_id?.trim()) {
+        const q = filters.cashfree_order_id.trim().toLowerCase();
+        const value = (booking.payment_details?.cashfree_order_id || '').toLowerCase();
+        if (!value.includes(q)) return false;
       }
 
       return true;
@@ -210,7 +233,10 @@ const Bookings: React.FC = () => {
       date_on: 'createdAt',
       sort_by: 'createdAt',
       sort_order: 'desc',
-      repeat_vehicle_days: 0
+      repeat_vehicle_days: 0,
+      payment_transaction_id: '',
+      bank_reference: '',
+      cashfree_order_id: '',
     };
   });
   
@@ -260,7 +286,10 @@ const Bookings: React.FC = () => {
       date_on: 'createdAt',
       sort_by: 'createdAt',
       sort_order: 'desc',
-      repeat_vehicle_days: 0
+      repeat_vehicle_days: 0,
+      payment_transaction_id: '',
+      bank_reference: '',
+      cashfree_order_id: '',
     };
   };
 
@@ -411,7 +440,7 @@ const Bookings: React.FC = () => {
       });
 
       // Play a sweet notification sound
-      playNotificationSound();
+      // playNotificationSound();
       
       // Show notification
       if ('Notification' in window && Notification.permission === 'granted') {
@@ -441,6 +470,7 @@ const Bookings: React.FC = () => {
           }
           // New paid booking that matches filters becomes unread
           setUnreadBookingIds(prev => new Set(prev).add(updatedBooking._id));
+          // playNotificationSound();
           return [updatedBooking, ...prevBookings];
         }
         // Remove from list if it exists and is no longer paid
@@ -449,6 +479,11 @@ const Bookings: React.FC = () => {
         }
         return prevBookings;
       });
+    };
+
+    const handlePaymentVerified = (data: any) => {
+      console.log('📡 Received payment verified:', data);
+      handleBookingUpdated({ booking: data.booking });
     };
 
     // Handle booking deletion events
@@ -464,6 +499,7 @@ const Bookings: React.FC = () => {
     // Set up event listeners
     socketService.onNewBooking(handleNewBooking);
     socketService.onBookingUpdated(handleBookingUpdated);
+    socketService.onPaymentVerified(handlePaymentVerified);
     socketService.onBookingDeleted(handleBookingDeleted);
 
     // Request notification permission
@@ -475,6 +511,7 @@ const Bookings: React.FC = () => {
     return () => {
       socketService.offNewBooking();
       socketService.offBookingUpdated();
+      socketService.offPaymentVerified();
       socketService.offBookingDeleted();
       socketService.disconnect();
     };
@@ -779,7 +816,10 @@ const Bookings: React.FC = () => {
       date_to: filters.date_to,
       date_on: filters.date_on,
       sort_by: filters.sort_by,
-      sort_order: filters.sort_order
+      sort_order: filters.sort_order,
+      payment_transaction_id: filters.payment_transaction_id,
+      bank_reference: filters.bank_reference,
+      cashfree_order_id: filters.cashfree_order_id,
     };
     return { ...base, ...overrides };
   };
@@ -884,7 +924,10 @@ const Bookings: React.FC = () => {
       'Status',
       'Processed',
       'Payment Reference',
-      'Transaction ID',
+      'Merchant Order ID',
+      'Payment Transaction ID',
+      'UTR / Bank Reference',
+      'Cashfree Order ID',
       'Payment Method',
       'Paid At',
       'Booking Date'
@@ -958,6 +1001,9 @@ const Bookings: React.FC = () => {
         booking.processed_by_admin ? 'Yes' : 'No',
         booking.payment_details?.payment_reference || 'N/A',
         booking.payment_details?.transaction_id || 'N/A',
+        booking.payment_details?.payment_transaction_id || 'N/A',
+        booking.payment_details?.bank_reference || 'N/A',
+        booking.payment_details?.cashfree_order_id || 'N/A',
         booking.payment_details?.payment_method || 'N/A',
         paidAt,
         bookingDate
@@ -1793,8 +1839,32 @@ const Bookings: React.FC = () => {
                 </div>
                 {selectedBooking.payment_details?.transaction_id && (
                   <div>
-                    <h4 className="text-sm font-medium text-gray-500 mb-2">Transaction ID</h4>
+                    <h4 className="text-sm font-medium text-gray-500 mb-2">Merchant Order ID</h4>
                     <p className="text-gray-900 font-mono text-sm">{selectedBooking.payment_details.transaction_id}</p>
+                  </div>
+                )}
+                {selectedBooking.payment_details?.payment_transaction_id && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500 mb-2">Payment Transaction ID</h4>
+                    <p className="text-gray-900 font-mono text-sm">{selectedBooking.payment_details.payment_transaction_id}</p>
+                  </div>
+                )}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500 mb-2">UTR / Bank Reference</h4>
+                  <p className="text-gray-900 font-mono text-sm">
+                    {selectedBooking.payment_details?.bank_reference || '—'}
+                  </p>
+                </div>
+                {selectedBooking.payment_details?.cashfree_order_id && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500 mb-2">Cashfree Order ID</h4>
+                    <p className="text-gray-900 font-mono text-sm">{selectedBooking.payment_details.cashfree_order_id}</p>
+                  </div>
+                )}
+                {selectedBooking.payment_details?.payment_reference && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500 mb-2">Internal Payment Reference</h4>
+                    <p className="text-gray-900 font-mono text-sm">{selectedBooking.payment_details.payment_reference}</p>
                   </div>
                 )}
                 {selectedBooking.payment_details?.payment_method && (
@@ -1917,11 +1987,11 @@ const Bookings: React.FC = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <input
               type="text"
-              placeholder="Search by phone, vehicle number, booking ID, or name..."
+              placeholder="Search by phone, vehicle, booking ID, payment IDs..."
               value={filters.search}
               onChange={(e) => handleFilterChange('search', e.target.value)}
               className="pl-10 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              title="Search by phone number, vehicle number, booking ID, or customer name"
+              title="Search by phone, vehicle, booking ID, customer name, or payment reference IDs"
             />
           </div>
 
@@ -2094,6 +2164,40 @@ const Bookings: React.FC = () => {
             <option value="3">Same car in same state for 3+ consecutive days</option>
             <option value="4">Same car in same state for 4+ consecutive days</option>
           </select>
+        </div>
+
+        {/* Cashfree payment tracking filters */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Payment Transaction ID</label>
+            <input
+              type="text"
+              placeholder="Cashfree cf_payment_id"
+              value={filters.payment_transaction_id || ''}
+              onChange={(e) => handleFilterChange('payment_transaction_id', e.target.value)}
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 font-mono text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">UTR / Bank Reference</label>
+            <input
+              type="text"
+              placeholder="bank_reference / UTR"
+              value={filters.bank_reference || ''}
+              onChange={(e) => handleFilterChange('bank_reference', e.target.value)}
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 font-mono text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Cashfree Order ID</label>
+            <input
+              type="text"
+              placeholder="cf_order_id"
+              value={filters.cashfree_order_id || ''}
+              onChange={(e) => handleFilterChange('cashfree_order_id', e.target.value)}
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 font-mono text-sm"
+            />
+          </div>
         </div>
 
         {/* Date Filters */}
@@ -2393,20 +2497,39 @@ const Bookings: React.FC = () => {
                       </button>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {booking.payment_details?.payment_reference || booking.payment_details?.transaction_id ? (
+                      {booking.payment_details?.payment_transaction_id ||
+                      booking.payment_details?.bank_reference ||
+                      booking.payment_details?.cashfree_order_id ||
+                      booking.payment_details?.transaction_id ? (
                         <div className="space-y-1">
-                          {booking.payment_details?.payment_reference && (
+                          {booking.payment_details?.payment_transaction_id && (
                             <div className="flex items-center">
-                              <span className="text-xs text-gray-500 mr-2 min-w-[60px]">Pay Ref:</span>
-                              <span className="font-mono text-xs bg-purple-50 px-2 py-1 rounded border border-purple-200 text-purple-700">
-                                {booking.payment_details.payment_reference}
+                              <span className="text-xs text-gray-500 mr-2 min-w-[72px]">Txn ID:</span>
+                              <span className="font-mono text-xs bg-green-50 px-2 py-1 rounded border border-green-200 text-green-700 max-w-[180px] truncate" title={booking.payment_details.payment_transaction_id}>
+                                {booking.payment_details.payment_transaction_id}
+                              </span>
+                            </div>
+                          )}
+                          {booking.payment_details?.bank_reference && (
+                            <div className="flex items-center">
+                              <span className="text-xs text-gray-500 mr-2 min-w-[72px]">UTR/Ref:</span>
+                              <span className="font-mono text-xs bg-amber-50 px-2 py-1 rounded border border-amber-200 text-amber-800 max-w-[180px] truncate" title={booking.payment_details.bank_reference}>
+                                {booking.payment_details.bank_reference}
+                              </span>
+                            </div>
+                          )}
+                          {booking.payment_details?.cashfree_order_id && (
+                            <div className="flex items-center">
+                              <span className="text-xs text-gray-500 mr-2 min-w-[72px]">CF Order:</span>
+                              <span className="font-mono text-xs bg-purple-50 px-2 py-1 rounded border border-purple-200 text-purple-700 max-w-[180px] truncate" title={booking.payment_details.cashfree_order_id}>
+                                {booking.payment_details.cashfree_order_id}
                               </span>
                             </div>
                           )}
                           {booking.payment_details?.transaction_id && (
                             <div className="flex items-center">
-                              <span className="text-xs text-gray-500 mr-2 min-w-[60px]">Txn ID:</span>
-                              <span className="font-mono text-xs bg-blue-50 px-2 py-1 rounded border border-blue-200 text-blue-700 max-w-[200px] truncate" title={booking.payment_details.transaction_id}>
+                              <span className="text-xs text-gray-500 mr-2 min-w-[72px]">Order:</span>
+                              <span className="font-mono text-xs bg-blue-50 px-2 py-1 rounded border border-blue-200 text-blue-700 max-w-[180px] truncate" title={booking.payment_details.transaction_id}>
                                 {booking.payment_details.transaction_id}
                               </span>
                             </div>

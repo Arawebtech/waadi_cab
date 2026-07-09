@@ -1,12 +1,21 @@
-// API base URL — always normalize to .../api/v1 (Capacitor build bakes NEXT_PUBLIC_* at compile time)
-function normalizeApiBaseUrl(raw?: string): string {
-  const fallback = 'https://api.waadi.in/api/v1'
-  const trimmed = (raw || fallback).trim().replace(/\/+$/, '')
-  if (trimmed.endsWith('/api/v1')) return trimmed
-  return `${trimmed}/api/v1`
+// API host from NEXT_PUBLIC_API_URL — base URL only (no /api/v1).
+// e.g. https://api.waadi.in or https://api.waadi.in
+// Capacitor build bakes NEXT_PUBLIC_* at compile time.
+function normalizeApiHost(raw?: string): string {
+  const fallback = 'https://api.waadi.in'
+  let trimmed = (raw || fallback).trim().replace(/\/+$/, '')
+  // Strip accidental /api/v1 suffix for backwards compatibility
+  if (trimmed.endsWith('/api/v1')) {
+    trimmed = trimmed.slice(0, -'/api/v1'.length).replace(/\/+$/, '')
+  }
+  return trimmed
 }
 
-export const base_url = normalizeApiBaseUrl(process.env.NEXT_PUBLIC_API_URL)
+/** Bare API host (no version prefix) */
+export const api_url = normalizeApiHost(process.env.NEXT_PUBLIC_API_URL)
+
+/** Versioned API base — use this for all backend calls */
+export const base_url = `${api_url}/api/v1`
 
 // Frontend URL configuration
 export const frontend_url = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://book.waadi.in"

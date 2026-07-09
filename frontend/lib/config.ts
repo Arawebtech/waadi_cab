@@ -1,7 +1,9 @@
+import { base_url } from '../environment'
+
 // Safe environment configuration for Next.js
 export const config = {
-  // Backend API URL
-  backendUrl: process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.waadi.in/api/v1',
+  // Backend API URL (includes /api/v1)
+  backendUrl: base_url,
   
   // Frontend URL - with fallback for SSR
   frontendUrl: process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost',

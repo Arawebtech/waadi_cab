@@ -1,7 +1,12 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useLayoutEffect, useState, ReactNode } from 'react';
 import { Capacitor } from '@capacitor/core';
+import {
+  applyNativeSafeAreaInsets,
+  bindNativeSafeAreaListeners,
+  configureNativeStatusBar,
+} from '@/lib/native-safe-area';
 
 interface SafeAreaContextType {
   safeAreaInsets: {
@@ -29,7 +34,23 @@ interface SafeAreaProviderProps {
   children: ReactNode;
 }
 
+function readInsetState() {
+  const root = document.documentElement;
+  const top =
+    parseFloat(root.style.getPropertyValue('--app-safe-area-top')) ||
+    parseFloat(getComputedStyle(root).getPropertyValue('--app-safe-area-top')) ||
+    0;
+  const bottom =
+    parseFloat(root.style.getPropertyValue('--app-safe-area-bottom')) ||
+    parseFloat(getComputedStyle(root).getPropertyValue('--app-safe-area-bottom')) ||
+    0;
+  return { top, bottom, left: 0, right: 0 };
+}
+
 export const SafeAreaProvider: React.FC<SafeAreaProviderProps> = ({ children }) => {
+  const platform = Capacitor.getPlatform();
+  const isNative = Capacitor.isNativePlatform();
+
   const [safeAreaInsets, setSafeAreaInsets] = useState({
     top: 0,
     right: 0,
@@ -37,52 +58,43 @@ export const SafeAreaProvider: React.FC<SafeAreaProviderProps> = ({ children }) 
     left: 0,
   });
 
-  const [isMobile, setIsMobile] = useState(false);
-  const [isAndroid, setIsAndroid] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
+  const [isMobile, setIsMobile] = useState(isNative);
+  const [isAndroid, setIsAndroid] = useState(platform === 'android');
+  const [isIOS, setIsIOS] = useState(platform === 'ios');
 
-  useEffect(() => {
-    // Detect platform
-    const platform = Capacitor.getPlatform();
-    const isNative = Capacitor.isNativePlatform();
-    
+  useLayoutEffect(() => {
     setIsMobile(isNative);
     setIsAndroid(platform === 'android');
     setIsIOS(platform === 'ios');
 
-    // Get safe area insets from CSS environment variables
-    const getSafeAreaInsets = () => {
-      const root = document.documentElement;
-      const computedStyle = getComputedStyle(root);
-      
-      const top = parseInt(computedStyle.getPropertyValue('--safe-area-inset-top') || '0');
-      const right = parseInt(computedStyle.getPropertyValue('--safe-area-inset-right') || '0');
-      const bottom = parseInt(computedStyle.getPropertyValue('--safe-area-inset-bottom') || '0');
-      const left = parseInt(computedStyle.getPropertyValue('--safe-area-inset-left') || '0');
+    if (!isNative) return;
 
-      setSafeAreaInsets({ top, right, bottom, left });
+    let cancelled = false;
+
+    const syncInsets = () => {
+      if (cancelled) return;
+      applyNativeSafeAreaInsets();
+      setSafeAreaInsets(readInsetState());
     };
 
-    // Initial calculation
-    getSafeAreaInsets();
+    syncInsets();
 
-    // Recalculate on resize (orientation change)
-    window.addEventListener('resize', getSafeAreaInsets);
-    window.addEventListener('orientationchange', getSafeAreaInsets);
-
-    // Recalculate when CSS custom properties change
-    const observer = new MutationObserver(getSafeAreaInsets);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['style'],
+    void configureNativeStatusBar().then(() => {
+      syncInsets();
+      // Re-measure after native layout settles (rotation, keyboard, status bar).
+      window.requestAnimationFrame(() => {
+        syncInsets();
+        window.setTimeout(syncInsets, 100);
+      });
     });
 
+    const unbind = bindNativeSafeAreaListeners();
+
     return () => {
-      window.removeEventListener('resize', getSafeAreaInsets);
-      window.removeEventListener('orientationchange', getSafeAreaInsets);
-      observer.disconnect();
+      cancelled = true;
+      unbind();
     };
-  }, []);
+  }, [isNative, platform]);
 
   const value: SafeAreaContextType = {
     safeAreaInsets,
@@ -97,11 +109,3 @@ export const SafeAreaProvider: React.FC<SafeAreaProviderProps> = ({ children }) 
     </SafeAreaContext.Provider>
   );
 };
-
-
-
-
-
-
-
-

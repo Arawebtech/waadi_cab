@@ -2,6 +2,8 @@
  * Network connectivity utility functions
  */
 
+import { api_url } from '../environment';
+
 /**
  * Test if a URL is reachable (for connectivity validation)
  */
@@ -36,7 +38,7 @@ export const testConnectivity = async (): Promise<{
   const testUrls = [
     'https://www.google.com',
     'https://www.cloudflare.com',
-    'https://api.waadi.in',
+    api_url,
   ];
 
   const startTime = Date.now();

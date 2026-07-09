@@ -599,6 +599,7 @@ const { isAppPlatformRequest } = require('../utils/platformRequest');
 const User = require('../models/User');
 const gatewayResolver = require('../config/gatewayResolver');
 const lifecycle = require('../utils/bookingLifecycleLogger');
+const { emitNewBooking, emitBookingUpdated } = require('../utils/socketEvents');
 
 
 class BookingController {
@@ -738,14 +739,8 @@ class BookingController {
 
 
       // Emit real-time event to admin dashboard
-      if (global.io) {
-        global.io.to('admin-room').emit('new-booking', {
-          type: 'new-booking',
-          booking: savedBooking,
-          timestamp: new Date().toISOString()
-        });
-        console.log('📡 Emitted new booking event to admin dashboard');
-      }
+      emitNewBooking(savedBooking);
+      console.log('📡 Emitted new booking event to admin dashboard');
 
       // Construct response
       const response = {
@@ -937,14 +932,8 @@ class BookingController {
       ]);
 
       // Emit real-time event to admin dashboard
-      if (global.io) {
-        global.io.to('admin-room').emit('booking-updated', {
-          type: 'booking-updated',
-          booking: updatedBooking,
-          timestamp: new Date().toISOString()
-        });
-        console.log('📡 Emitted booking updated event to admin dashboard');
-      }
+      emitBookingUpdated(updatedBooking);
+      console.log('📡 Emitted booking updated event to admin dashboard');
 
       res.status(200).json({
         success: true,

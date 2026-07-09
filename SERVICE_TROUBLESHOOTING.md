@@ -8,7 +8,7 @@ Run the service status checker:
 
 ## Service URLs
 - **Backend API**: https://api.waadi.in
-- **Admin Dashboard**: http://localhost:3000
+- **Admin Dashboard**: https://book.waadi.in
 - **Health Check**: https://api.waadi.in/health
 
 ## Common Issues & Solutions

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { base_url } from '../environment';
 
 interface MaintenanceStatus {
   isMaintenanceMode: boolean;
@@ -10,10 +11,9 @@ interface MaintenanceStatus {
   error: string | null;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.waadi.in/api/v1';
-// Allow overriding app-status endpoint independently (e.g., 127.0.0.1:3001/app-status)
+// Allow overriding app-status endpoint independently
 const APP_STATUS_URL =
-  process.env.NEXT_PUBLIC_APP_STATUS_URL || `${API_BASE_URL}/app-status`;
+  process.env.NEXT_PUBLIC_APP_STATUS_URL || `${base_url}/app-status`;
 
 export const useMaintenance = () => {
   const [maintenanceStatus, setMaintenanceStatus] = useState<MaintenanceStatus>({

@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { MobileLayout } from "@/components/mobile-layout"
 import { LanguageToggle } from "@/components/language-toggle"
 import { useLanguage } from "@/hooks/use-language"
 import { useToast } from "@/components/ui/use-toast"
@@ -29,7 +28,6 @@ export default function LoginPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [termsDialogOpen, setTermsDialogOpen] = useState(false)
   const [termsError, setTermsError] = useState(false)
-  console.log("LoginPage");
 
   const clearForm = () => {
     setFormData({ phoneNumber: "" })

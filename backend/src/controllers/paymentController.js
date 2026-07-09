@@ -1648,12 +1648,13 @@ const cashfreeService = require('../services/cashfreeService'); // kept for Cash
 const gatewayResolver = require('../config/gatewayResolver');
 const gatewayCredentials = require('../utils/gatewayCredentials');
 const { isAppPlatformRequest } = require('../utils/platformRequest');
-const PaymentGatewayConfig = require('../models/PaymentGatewayconfig');
+const PaymentGatewayConfig = require('../models/PaymentGatewayConfig');
 const whatsappService = require('../services/whatsappService');
 const crypto = require('crypto');
 const axios = require('axios');
 const saveCustomerLog = require('../utils/saveCustomerLog');
 const lifecycle = require('../utils/bookingLifecycleLogger');
+const { emitPaymentVerified } = require('../utils/socketEvents');
 
 class PaymentController {
   // GET/POST /payment/relay - Render an auto-submitting PayU form (helps native apps open via GET)
@@ -2186,16 +2187,12 @@ class PaymentController {
         };
       }
 
-      // Emit real-time event to admin dashboard
-      if (global.io) {
-        global.io.to('admin-room').emit('payment-verified', {
-          type: 'payment-verified',
-          booking: savedBooking,
-          payment: payment.getSummary(),
-          whatsapp: whatsappStatus,
-          timestamp: new Date().toISOString()
-        });
-      }
+      // Emit real-time event to admin dashboard + user app
+      emitPaymentVerified(savedBooking, {
+        payment: payment.getSummary(),
+        whatsapp: whatsappStatus,
+        gateway: 'payu',
+      });
 
       res.status(200).json({
         success: true,

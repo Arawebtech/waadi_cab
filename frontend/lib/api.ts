@@ -373,6 +373,10 @@ async function apiRequest<T>(
 
   try {
     const url = `${base_url}${endpoint}`
+
+    if (typeof window !== 'undefined' && Capacitor.isNativePlatform()) {
+      console.log('[Waadi API]', options.method || 'GET', url, 'origin:', window.location.origin)
+    }
     
     // Skip token refresh for auth endpoints
     const isAuthEndpoint = endpoint.startsWith('/auth/') && 
@@ -464,10 +468,17 @@ async function apiRequest<T>(
 
     return data as T
   } catch (error) {
+    const url = `${base_url}${endpoint}`
+    console.error('[Waadi API] Network error:', {
+      url,
+      endpoint,
+      origin: typeof window !== 'undefined' ? window.location.origin : 'ssr',
+      error,
+    })
     appLogger.network('API network error', {
       sourceFile: 'api.ts',
       sourceFunction: 'apiRequest',
-      data: { endpoint, durationMs: Math.round(performance.now() - start) },
+      data: { endpoint, url, durationMs: Math.round(performance.now() - start) },
     })
     // API Request Error
     return {

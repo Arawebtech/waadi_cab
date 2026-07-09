@@ -16,6 +16,7 @@ const whatsappService = require('../services/whatsappService');
 const saveCustomerLog = require('../utils/saveCustomerLog');
 const { isAppPlatformRequest } = require('../utils/platformRequest');
 const { redirectAfterPayment } = require('../utils/paymentAppRedirect');
+const { emitPaymentVerified } = require('../utils/socketEvents');
 
 class CashfreeController {
   // ─── GET /payment/cashfree/relay ─────────────────────────────────────────────
@@ -280,10 +281,16 @@ class CashfreeController {
 
       if (verification.verified && booking) {
         booking.status = 'paid';
+        booking.payment_details = booking.payment_details || {};
         booking.payment_details.payment_method = 'cashfree';
-        booking.payment_details.payment_reference = verification.paymentId;
-        booking.payment_details.paid_at = new Date();
+        booking.payment_details.paid_at = booking.payment_details.paid_at || new Date();
+        await this._applyVerifiedCashfreePaymentTracking(booking, order_id, { verification });
         await booking.save();
+        await booking.populate([
+          { path: 'visiting_state', select: 'name' },
+          { path: 'user', select: 'firstName lastName phoneNumber email' },
+        ]);
+        emitPaymentVerified(booking, { gateway: 'cashfree', source: 'success-callback' });
         console.log('✅ Booking marked paid:', booking.bookingId);
       }
 
@@ -552,7 +559,17 @@ class CashfreeController {
         booking.status = 'paid';
         booking.payment_details = booking.payment_details || {};
         booking.payment_details.payment_method = 'cashfree';
-        booking.payment_details.payment_reference = verification.paymentId;
+        booking.payment_details.paid_at = booking.payment_details.paid_at || new Date();
+        await this._applyVerifiedCashfreePaymentTracking(booking, txnId, { verification });
+        await booking.save();
+        await booking.populate([
+          { path: 'visiting_state', select: 'name' },
+          { path: 'user', select: 'firstName lastName phoneNumber email' },
+        ]);
+        emitPaymentVerified(booking, { gateway: 'cashfree', source: 'verify-payment' });
+      } else if (verification.verified && booking.status === 'paid' && !booking.payment_details?.payment_transaction_id) {
+        booking.payment_details = booking.payment_details || {};
+        await this._applyVerifiedCashfreePaymentTracking(booking, txnId, { verification });
         await booking.save();
       }
 
@@ -603,8 +620,18 @@ class CashfreeController {
       if (verification.verified && booking.status !== 'paid') {
         booking.status = 'paid';
         booking.payment_details = booking.payment_details || {};
-        booking.payment_details.payment_reference = verification.paymentId;
-        booking.payment_details.paid_at = new Date();
+        booking.payment_details.payment_method = booking.payment_details.payment_method || 'cashfree';
+        booking.payment_details.paid_at = booking.payment_details.paid_at || new Date();
+        await this._applyVerifiedCashfreePaymentTracking(booking, txnId, { verification });
+        await booking.save();
+        await booking.populate([
+          { path: 'visiting_state', select: 'name' },
+          { path: 'user', select: 'firstName lastName phoneNumber email' },
+        ]);
+        emitPaymentVerified(booking, { gateway: 'cashfree', source: 'payment-status' });
+      } else if (verification.verified && booking.status === 'paid' && !booking.payment_details?.payment_transaction_id) {
+        booking.payment_details = booking.payment_details || {};
+        await this._applyVerifiedCashfreePaymentTracking(booking, txnId, { verification });
         await booking.save();
       }
 
@@ -657,6 +684,16 @@ class CashfreeController {
   // ─── Private Helpers ──────────────────────────────────────────────────────
 
   /**
+   * Persist Cashfree gateway transaction IDs on the booking after verified payment.
+   */
+  async _applyVerifiedCashfreePaymentTracking(booking, orderId, context = {}) {
+    if (!booking || !orderId) return;
+
+    const tracking = await cashfreeService.resolvePaymentTrackingDetails(orderId, context);
+    cashfreeService.applyPaymentTrackingToBooking(booking, tracking);
+  }
+
+  /**
    * Process a PAYMENT_SUCCESS_WEBHOOK event.
    * Idempotent – safe to call multiple times for the same order.
    */
@@ -676,7 +713,17 @@ class CashfreeController {
     }
 
     if (booking.status === 'paid') {
-      console.log('ℹ️  Cashfree webhook: booking already paid (idempotent):', booking.bookingId);
+      if (!booking.payment_details?.payment_transaction_id) {
+        booking.payment_details = booking.payment_details || {};
+        await this._applyVerifiedCashfreePaymentTracking(booking, orderId, {
+          webhookPayment: paymentData,
+          webhookOrder: orderData,
+        });
+        await booking.save();
+        console.log('ℹ️  Cashfree webhook: backfilled payment tracking:', booking.bookingId);
+      } else {
+        console.log('ℹ️  Cashfree webhook: booking already paid (idempotent):', booking.bookingId);
+      }
       return;
     }
 
@@ -705,26 +752,31 @@ class CashfreeController {
     // Update booking
     booking.status = 'paid';
     booking.payment_status = 'paid';
-    booking.payment_details.payment_reference =
-      paymentData.cf_payment_id?.toString() || '';
+    booking.payment_details = booking.payment_details || {};
+    booking.payment_details.payment_method = 'cashfree';
     booking.payment_details.paid_at = new Date();
     booking.payment_details.verification_method = 'cashfree_webhook';
-    await booking.save();
+    await this._applyVerifiedCashfreePaymentTracking(booking, orderId, {
+      webhookPayment: paymentData,
+      webhookOrder: orderData,
+    });
+      await booking.save();
 
-    console.log('✅ Cashfree webhook: booking paid:', booking.bookingId);
+      await booking.populate([
+        { path: 'visiting_state', select: 'name' },
+        { path: 'user', select: 'firstName lastName phoneNumber email' },
+      ]);
 
-    // WhatsApp & socket events
-    this._sendWhatsapp(booking).catch(() => {});
-    if (global.io) {
-      global.io.to('admin-room').emit('payment-verified', {
-        type: 'payment-verified',
+      console.log('✅ Cashfree webhook: booking paid:', booking.bookingId);
+
+      // WhatsApp & socket events
+      this._sendWhatsapp(booking).catch(() => {});
+      const { emitPaymentVerified } = require('../utils/socketEvents');
+      emitPaymentVerified(booking, {
         gateway: 'cashfree',
         source: 'webhook',
-        booking,
         payment: payment.getSummary(),
-        timestamp: new Date().toISOString(),
       });
-    }
   }
 
   async _processFailedWebhook(orderData, paymentData) {

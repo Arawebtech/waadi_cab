@@ -60,24 +60,25 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+
+  html.capacitor-native,
+  html.capacitor-native body {
+    /* Prevent horizontal overflow on notched / edge-to-edge devices */
+    overflow-x: hidden;
+  }
 }
 
 @layer components {
   .mobile-container {
-    @apply min-h-screen bg-gray-50;
-    /* Ensure proper safe area handling */
-    padding-top: env(safe-area-inset-top, 0px);
+    @apply min-h-screen bg-gray-50 w-full overflow-x-hidden;
   }
 
   .mobile-header {
     @apply bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-50;
-    /* Additional top margin for status bar */
-    margin-top: env(safe-area-inset-top, 0px);
   }
 
   .mobile-content {
     @apply pb-20;
-    /* Ensure content doesn't get hidden behind navigation */
     padding-bottom: calc(5rem + max(env(safe-area-inset-bottom, 0px), 20px));
   }
 
@@ -94,7 +95,11 @@
   }
 
   .safe-area-top {
-    padding-top: env(safe-area-inset-top);
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  html.capacitor-native.capacitor-android .safe-area-top {
+    padding-top: var(--app-safe-area-top, env(safe-area-inset-top, 0px));
   }
 
   .safe-area-bottom {
@@ -121,34 +126,40 @@
     @apply text-center py-4 text-gray-500;
   }
 
-  /* Safe area utilities for all pages */
+  /* Safe area utilities for all pages — web only; Capacitor uses safe-area.css */
   .safe-area-page {
     min-height: 100vh;
-    padding-top: env(safe-area-inset-top, 0px);
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
-  .safe-area-content {
-    padding-top: max(env(safe-area-inset-top, 0px), 20px);
-    padding-left: max(env(safe-area-inset-left, 0px), 16px);
-    padding-right: max(env(safe-area-inset-right, 0px), 16px);
-    padding-bottom: max(env(safe-area-inset-bottom, 0px), 20px);
-  }
-
-  /* Ensure all pages respect safe areas */
-  .page-container {
-    min-height: 100vh;
+  html:not(.capacitor-native) .safe-area-page {
     padding-top: env(safe-area-inset-top, 0px);
   }
 
-  /* Public pages (login, signup, etc.) safe area handling */
-  .public-page {
-    min-height: 100vh;
-    padding-top: max(env(safe-area-inset-top, 0px), 20px);
+  .safe-area-content {
     padding-left: max(env(safe-area-inset-left, 0px), 16px);
     padding-right: max(env(safe-area-inset-right, 0px), 16px);
     padding-bottom: max(env(safe-area-inset-bottom, 0px), 20px);
+  }
+
+  html:not(.capacitor-native) .safe-area-content {
+    padding-top: max(env(safe-area-inset-top, 0px), 20px);
+  }
+
+  .page-container {
+    min-height: 100vh;
+  }
+
+  html:not(.capacitor-native) .page-container {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  /* Public pages (login, signup, etc.) */
+  .public-page {
+    min-height: 100vh;
+    width: 100%;
+    overflow-x: hidden;
   }
 }

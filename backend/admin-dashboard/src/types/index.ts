@@ -105,6 +105,12 @@ export interface Booking {
     paid_at?: string;
     payment_reference?: string;
     failure_reason?: string;
+    /** Cashfree cf_payment_id */
+    payment_transaction_id?: string | null;
+    /** Cashfree bank_reference / UTR */
+    bank_reference?: string | null;
+    /** Cashfree cf_order_id */
+    cashfree_order_id?: string | null;
   };
   validity: {
     valid_from?: string;
@@ -323,6 +329,12 @@ export interface BookingFilters {
    * Example: 2 => show vehicles that have bookings on 2 or more back-to-back days.
    */
   repeat_vehicle_days?: number;
+  /** Cashfree cf_payment_id (gateway payment transaction ID) */
+  payment_transaction_id?: string;
+  /** Cashfree bank_reference / UTR */
+  bank_reference?: string;
+  /** Cashfree cf_order_id */
+  cashfree_order_id?: string;
 }
 
 export interface UserFilters {

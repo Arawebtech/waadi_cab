@@ -14,9 +14,7 @@ export const isNativePlatform = () => {
   return Capacitor.isNativePlatform();
 };
 
-/**
- * Get the current platform
- */
+
 export const getPlatform = () => {
   return Capacitor.getPlatform();
 };
@@ -28,17 +26,22 @@ export const initializeCapacitor = async () => {
   if (!isNativePlatform()) return;
 
   try {
-    // Hide splash screen
+    // Status bar + safe area are configured in SafeAreaProvider (native-safe-area.ts)
     await SplashScreen.hide();
-
-    // Set status bar style
-    await StatusBar.setStyle({ style: Style.Default });
-    
-    // Show status bar
-    await StatusBar.show();
 
     // Initialize network monitoring
     await initializeNetworkMonitoring();
+
+    // Android hardware back button
+    if (Capacitor.getPlatform() === 'android') {
+      await App.addListener('backButton', () => {
+        if (typeof window !== 'undefined' && window.history.length > 1) {
+          window.history.back();
+        } else {
+          App.exitApp();
+        }
+      });
+    }
 
     appLogger.mobile('Capacitor plugins initialized', {
       sourceFile: 'capacitor.ts',
