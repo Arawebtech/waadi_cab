@@ -97,22 +97,67 @@ appVersionSchema.statics.getLatestVersion = async function(platform = 'both') {
 };
 
 // Static method to check if update is required
+// appVersionSchema.statics.checkUpdateRequired = async function(currentVersion, platform = 'both') {
+//   try {
+//     const latestVersion = await this.getLatestVersion(platform);
+    
+//     if (!latestVersion) {
+//       return { updateRequired: false, latestVersion: null };
+//     }
+    
+//     const comparison = compareVersions(currentVersion, latestVersion.version);
+    
+//     return {
+//       updateRequired: comparison < 0 || latestVersion.isForced,
+//       latestVersion: latestVersion,
+//       isForced: latestVersion.isForced,
+//       minSupportedVersion: latestVersion.minSupportedVersion
+//     };
+//   } catch (error) {
+//     console.error('Error checking update requirement:', error);
+//     throw error;
+//   }
+// };
+
 appVersionSchema.statics.checkUpdateRequired = async function(currentVersion, platform = 'both') {
   try {
     const latestVersion = await this.getLatestVersion(platform);
-    
+
     if (!latestVersion) {
-      return { updateRequired: false, latestVersion: null };
+      return {
+        updateRequired: false,
+        latestVersion: null
+      };
     }
-    
-    const comparison = compareVersions(currentVersion, latestVersion.version);
-    
+
+    const currentVsLatest = compareVersions(
+      currentVersion,
+      latestVersion.version
+    );
+
+    const currentVsMinimum = compareVersions(
+      currentVersion,
+      latestVersion.minSupportedVersion
+    );
+
     return {
-      updateRequired: comparison < 0 || latestVersion.isForced,
-      latestVersion: latestVersion,
-      isForced: latestVersion.isForced,
+      // New version available
+      hasUpdate: currentVsLatest < 0,
+
+      // Force update only if below minimum supported version
+      updateRequired:
+        currentVsMinimum < 0 ||
+        (currentVsLatest < 0 && latestVersion.isForced),
+
+      latestVersion,
+
+      isForced:
+        currentVsMinimum < 0 ||
+        latestVersion.isForced,
+
       minSupportedVersion: latestVersion.minSupportedVersion
     };
+
   } catch (error) {
     console.error('Error checking update requirement:', error);
     throw error;
