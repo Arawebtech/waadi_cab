@@ -2898,8 +2898,11 @@ await saveCustomerLog({
       const isFormCallback = req.headers['content-type'] === 'application/x-www-form-urlencoded';
       const isAppPlatform = String(req.query.platform || '').toLowerCase() === 'app';
       if (isFormCallback && !isAppPlatform) {
-        const frontendBase = process.env.FRONTEND_URL || 'https://book.waadi.in';
-        return res.redirect(`${frontendBase}/payment/success?txnid=${txnid}&status=success&amount=${amount}&bookingId=${booking.bookingId}`);
+        const frontendBase =
+          process.env.FRONTEND_URL ||
+          process.env.CUSTOMER_APP_URL ||
+          'http://31.97.229.97:3000';
+        return res.redirect(`${frontendBase.replace(/\/+$/, '')}/payment/success?txnid=${txnid}&status=success&amount=${amount}&bookingId=${booking.bookingId}`);
       }
 
       // For Capacitor native flow, deep-link back into the app and let the app close the in-app browser
@@ -3149,7 +3152,11 @@ await saveCustomerLog({
       const isFormCallback = req.headers['content-type'] === 'application/x-www-form-urlencoded';
       const isAppPlatform = String(req.query.platform || '').toLowerCase() === 'app';
       if (isFormCallback && !isAppPlatform) {
-        const frontendBase = process.env.FRONTEND_URL || 'https://book.waadi.in'
+        const frontendBase = (
+          process.env.FRONTEND_URL ||
+          process.env.CUSTOMER_APP_URL ||
+          'http://31.97.229.97:3000'
+        ).replace(/\/+$/, '');
         return res.redirect(`${frontendBase}/payment/failure?txnid=${txnid}&status=failure&amount=${amount}&error=${encodeURIComponent(error_Message || 'Payment failed')}`);
       }
 

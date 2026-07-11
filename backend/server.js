@@ -51,9 +51,10 @@ const allowedOrigins = [
   'http://localhost:3001',
   'http://localhost:3002',
 
-  'https://book.waadi.in',
+  'https://31.97.229.97:3000',
   'https://admin.waadi.in',
   'https://api.waadi.in',
+  'https://waadi.in',
 
   'http://192.168.1.8:3001',
   'http://192.168.1.36:3000',
@@ -65,8 +66,7 @@ const allowedOrigins = [
   'http://127.0.0.1:3001',
   'http://127.0.0.1:3002',
 
-  'https://book.waadi.in',
-  'https://book.waadi.in:3001'
+  'https://31.97.229.97:3000:3001'
 ];
 
 
@@ -88,8 +88,8 @@ app.use(cors({
 // const io = new Server(server, {
 //     cors: {
 //       origin: process.env.NODE_ENV === 'production' 
-//         ? ['https://localhost','http://localhost:3000','https://book.waadi.in','https://admin.waadi.in','https://book.waadi.in','http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3001", "https://api.waadi.in", "http://192.168.1.36:3000", "http://127.0.0.1:3000", "http://127.0.0.1:3001","http://127.0.0.1:3002"]
-//         : ['https://localhost','http://localhost:3000','https://book.waadi.in','https://admin.waadi.in','https://book.waadi.in','http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3001", "https://api.waadi.in", "http://192.168.1.36:3000", "http://127.0.0.1:3000", "http://127.0.0.1:3001", "http://127.0.0.1:3002"],
+//         ? ['https://localhost','http://localhost:3000','https://31.97.229.97:3000','https://admin.waadi.in','https://31.97.229.97:3000','http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3001", "https://api.waadi.in", "http://192.168.1.36:3000", "http://127.0.0.1:3000", "http://127.0.0.1:3001","http://127.0.0.1:3002"]
+//         : ['https://localhost','http://localhost:3000','https://31.97.229.97:3000','https://admin.waadi.in','https://31.97.229.97:3000','http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3001", "https://api.waadi.in", "http://192.168.1.36:3000", "http://127.0.0.1:3000", "http://127.0.0.1:3001", "http://127.0.0.1:3002"],
 //       credentials: true
 //     }
 // });
@@ -120,8 +120,8 @@ app.use(compression());
 // CORS configuration
   // app.use(cors({
   //   origin: process.env.NODE_ENV === 'production' 
-  //     ?['https://localhost','https://book.waadi.in','https://book.waadi.in', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3001", " https://api.waadi.in/", " https://api.waadi.in/", "http://192.168.1.36:3000", "https://book.waadi.in", 'https://book.waadi.in', "https://book.waadi.in:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3001","http://127.0.0.1:3002"]
-  //     : ['https://localhost','https://book.waadi.in','https://book.waadi.in', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3001", " https://api.waadi.in/", " https://api.waadi.in/", "http://192.168.1.36:3000", "https://book.waadi.in", 'https://book.waadi.in',  "https://book.waadi.in:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3001", "http://127.0.0.1:3002"],
+  //     ?['https://localhost','https://31.97.229.97:3000','https://31.97.229.97:3000', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3001", " https://api.waadi.in/", " https://api.waadi.in/", "http://192.168.1.36:3000", "https://31.97.229.97:3000", 'https://31.97.229.97:3000', "https://31.97.229.97:3000:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3001","http://127.0.0.1:3002"]
+  //     : ['https://localhost','https://31.97.229.97:3000','https://31.97.229.97:3000', 'http://192.168.1.8:3001', "http://31.97.229.97:3001", "http://localhost:3001", " https://api.waadi.in/", " https://api.waadi.in/", "http://192.168.1.36:3000", "https://31.97.229.97:3000", 'https://31.97.229.97:3000',  "https://31.97.229.97:3000:3001", "https://admin.waadi.in", "http://127.0.0.1:3000", "http://127.0.0.1:3001", "http://127.0.0.1:3002"],
   //   credentials: true
   // }));
 
@@ -131,14 +131,6 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Rate limiting removed
-
-
-app.use(
-  '/api/v1/payment/cashfree/webhook',
-  express.raw({ type: 'application/json', limit: '10mb' })
-);
-
-
 
 // Raw body parser for payment callbacks (before other body parsers)
 app.use('/api/v1/payment/success', express.raw({ type: ['application/x-www-form-urlencoded', 'multipart/form-data'], limit: '10mb' }));

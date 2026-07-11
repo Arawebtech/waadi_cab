@@ -48,7 +48,7 @@ A comprehensive admin dashboard for managing the Wadi Cab border booking platfor
    ```
 
 4. **Access Dashboard**
-   Open [https://book.waadi.in](https://book.waadi.in) in your browser
+   Open [https://31.97.229.97:3000](https://31.97.229.97:3000) in your browser
 
 ### Build for Production
 ```bash

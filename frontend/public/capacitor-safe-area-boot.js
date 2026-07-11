@@ -28,7 +28,7 @@
 
     var host = location.hostname || '';
 
-    var isBundledHost = host === 'book.waadi.in' || host === 'localhost';
+    var isBundledHost = host === '31.97.229.97:3000' || host === 'localhost';
 
     return isBundledHost && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
 

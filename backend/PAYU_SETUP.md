@@ -14,7 +14,7 @@ PAYU_SUCCESS_URL= https://api.waadi.in/api/v1/payment/success
 PAYU_FAILURE_URL= https://api.waadi.in/api/v1/payment/failure
 
 # Frontend URL (optional - for user redirects)
-FRONTEND_URL=https://book.waadi.in
+FRONTEND_URL=https://31.97.229.97:3000
 ```
 
 ## 🚨 Critical Requirements for Success URL to Work

@@ -20,6 +20,22 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- Payment return deep links: wadicab://payment/success|pending|failure?... -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="wadicab" android:host="payment" />
+            </intent-filter>
+
+            <!-- Capacitor package URL scheme fallback -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="com.MP.Waadi_App" android:host="payment" />
+            </intent-filter>
         </activity>
 
         <provider

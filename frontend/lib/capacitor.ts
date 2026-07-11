@@ -121,51 +121,112 @@ export const app = {
 };
 
 /**
- * Handle payment deep links: wadicab://payment/(success|failure)?...
+ * Parse payment return URL and invoke in-app navigation.
+ * Supports: wadicab://payment/success?... and http(s)://host/payment/success?...
  */
-export const registerPaymentDeepLinks = (onNavigate: (path: string, params: URLSearchParams) => void) => {
+export function handlePaymentReturnUrl(
+  url: string,
+  onNavigate: (path: string, params: URLSearchParams) => void
+): boolean {
+  if (!url) return false;
+
+  try {
+    const parsed = new URL(url);
+    const pathname = parsed.pathname || '/';
+    const host = parsed.host || '';
+
+    const normalizeParams = (params: URLSearchParams) => {
+      if (!params.get('txnid')) {
+        const orderId = params.get('orderId') || params.get('order_id') || '';
+        if (orderId) params.set('txnid', orderId);
+      }
+      if (!params.get('orderId') && params.get('txnid')) {
+        params.set('orderId', params.get('txnid') || '');
+      }
+    };
+
+    // HTTP(S) return from payment browser
+    if (
+      (parsed.protocol === 'https:' || parsed.protocol === 'http:') &&
+      pathname.startsWith('/payment/')
+    ) {
+      normalizeParams(parsed.searchParams);
+      onNavigate(pathname, parsed.searchParams);
+      return true;
+    }
+
+    // wadicab://payment/success?...
+    if (host === 'payment') {
+      normalizeParams(parsed.searchParams);
+      const subPath = pathname.replace(/^\/+/, '').toLowerCase();
+      if (subPath === 'success' || subPath === 'pending' || subPath === 'failure') {
+        onNavigate(`/payment/${subPath}`, parsed.searchParams);
+        return true;
+      }
+
+      const status = (parsed.searchParams.get('status') || '').toLowerCase();
+      const fallbackPath =
+        status === 'success'
+          ? '/payment/success'
+          : status === 'pending'
+            ? '/payment/pending'
+            : '/payment/failure';
+      onNavigate(fallbackPath, parsed.searchParams);
+      return true;
+    }
+
+    // Custom scheme path form: wadicab://payment/success → host=payment handled above
+    let routePath = pathname;
+    if (host && host !== 'localhost' && !pathname.startsWith('/payment')) {
+      routePath = `/${host}${pathname}`;
+    }
+
+    if (routePath.startsWith('/payment/')) {
+      normalizeParams(parsed.searchParams);
+      onNavigate(routePath, parsed.searchParams);
+      return true;
+    }
+
+    return false;
+  } catch (e) {
+    console.error('Payment return URL parse error:', e);
+    return false;
+  }
+}
+
+/**
+ * Register payment deep links + cold-start launch URL handling.
+ */
+export const registerPaymentDeepLinks = (
+  onNavigate: (path: string, params: URLSearchParams) => void
+) => {
   if (!isNativePlatform()) return;
-  App.addListener('appUrlOpen', async (event) => {
-    try {
-      const url = event.url || '';
-      if (!url) return;
-      // Example: wadicab://payment/success?txnid=...&amount=...
-      const parsed = new URL(url);
-      const pathname = parsed.pathname || '/';
-      const host = parsed.host || '';
 
-      // Build route path for custom scheme where host is the first segment (e.g., host="payment")
-      // - wadicab://payment/success -> host: payment, pathname: /success => route: /payment/success
-      // - http(s)://book.waadi.in/payment/success -> host: book.waadi.in, pathname: /payment/success => already fine
-      let routePath = pathname;
-      if (host && host !== 'localhost' && !pathname.startsWith('/payment')) {
-        routePath = `/${host}${pathname}`;
+  const processUrl = async (url: string) => {
+    const handled = handlePaymentReturnUrl(url, onNavigate);
+    if (handled) {
+      try {
+        await Browser.close();
+      } catch {
+        /* in-app browser may already be closed */
       }
+    }
+  };
 
-      if (routePath.startsWith('/payment/')) {
-        try { await Browser.close(); } catch {}
-        if (!parsed.searchParams.get('txnid') && parsed.searchParams.get('order_id')) {
-          parsed.searchParams.set('txnid', parsed.searchParams.get('order_id') || '');
-        }
-        onNavigate(routePath, parsed.searchParams);
-        return;
-      }
-
-      if (host === 'payment') {
-        try { await Browser.close(); } catch {}
-        const status = (parsed.searchParams.get('status') || '').toLowerCase();
-        const fallbackPath =
-          status === 'success'
-            ? '/payment/success'
-            : status === 'pending'
-              ? '/payment/pending'
-              : '/payment/failure';
-        onNavigate(fallbackPath, parsed.searchParams);
-      }
-    } catch (e) {
-      console.error('Deep link handling error:', e);
+  App.addListener('appUrlOpen', (event) => {
+    if (event.url) {
+      processUrl(event.url);
     }
   });
+
+  // App opened from deep link while cold (was fully closed)
+  App.getLaunchUrl()
+    .then((result) => {
+      if (result?.url) {
+        processUrl(result.url);
+      }
+    })
+    .catch(() => {});
 };
 
 /**

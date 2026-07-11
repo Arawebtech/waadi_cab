@@ -32,15 +32,67 @@ export default function PaymentSuccessContent() {
     try {
       const urlParams = new URLSearchParams(window.location.search)
       const txnIdFromUrl = urlParams.get('txnid') || urlParams.get('order_id')
-      const status = urlParams.get('status')
-      const amountFromUrl = urlParams.get('amount')
-      const bookingIdFromUrl = urlParams.get('bookingId')
+      let status = urlParams.get('status')
+      let amountFromUrl = urlParams.get('amount')
+      let bookingIdFromUrl = urlParams.get('bookingId')
 
       if (!txnIdFromUrl) {
         throw new Error('Transaction ID not found')
       }
 
       setTxnId(txnIdFromUrl)
+
+      const gatewayParam = urlParams.get('gateway')
+      const gateway =
+        gatewayParam === 'payu' || gatewayParam === 'cashfree' ? gatewayParam : 'cashfree'
+
+      if (status === 'pending') {
+        router.replace(
+          `/payment/pending?txnid=${encodeURIComponent(txnIdFromUrl)}&status=pending&amount=${encodeURIComponent(amountFromUrl || '')}&bookingId=${encodeURIComponent(bookingIdFromUrl || '')}&gateway=${encodeURIComponent(gateway)}`
+        )
+        return
+      }
+
+      // Verify with backend when status is missing or not success (Cashfree / in-app browser)
+      if (!status || status !== 'success') {
+        try {
+          const { verifyPaymentWithBackend } = await import('@/lib/payment-gateway')
+          const result = await verifyPaymentWithBackend(gateway, txnIdFromUrl)
+
+          const paid =
+            result?.success &&
+            (result?.data?.status === 'success' || result?.data?.bookingStatus === 'paid')
+
+          if (paid) {
+            status = 'success'
+            amountFromUrl = String(result.data?.amount ?? amountFromUrl ?? '')
+            bookingIdFromUrl = String(result.data?.bookingId ?? bookingIdFromUrl ?? '')
+          } else if (result?.data?.status === 'pending') {
+            router.replace(
+              `/payment/pending?txnid=${encodeURIComponent(txnIdFromUrl)}&status=pending&amount=${encodeURIComponent(String(result.data?.amount ?? amountFromUrl ?? ''))}&bookingId=${encodeURIComponent(String(result.data?.bookingId ?? bookingIdFromUrl ?? ''))}&gateway=${encodeURIComponent(gateway)}`
+            )
+            return
+          }
+        } catch (verifyError) {
+          console.warn('Backend payment verify fallback failed:', verifyError)
+        }
+      } else if (!amountFromUrl || !bookingIdFromUrl) {
+        try {
+          const { verifyPaymentWithBackend } = await import('@/lib/payment-gateway')
+          const result = await verifyPaymentWithBackend(gateway, txnIdFromUrl)
+
+          const paid =
+            result?.success &&
+            (result?.data?.status === 'success' || result?.data?.bookingStatus === 'paid')
+
+          if (paid) {
+            amountFromUrl = String(result.data?.amount ?? amountFromUrl ?? '')
+            bookingIdFromUrl = String(result.data?.bookingId ?? bookingIdFromUrl ?? '')
+          }
+        } catch (verifyError) {
+          console.warn('Backend payment verify fallback failed:', verifyError)
+        }
+      }
 
       if (!status || status !== 'success') {
         throw new Error('Invalid payment status')

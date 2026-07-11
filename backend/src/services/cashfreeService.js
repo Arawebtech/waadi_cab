@@ -1,6 +1,4 @@
 
-
-const crypto = require('crypto');
 const axios = require('axios');
 
 class CashfreeService {
@@ -8,7 +6,6 @@ class CashfreeService {
     this.appId = process.env.CASHFREE_APP_ID || '';
     this.secretKey = process.env.CASHFREE_SECRET_KEY || '';
     this.environment = (process.env.CASHFREE_ENVIRONMENT || 'sandbox').trim().toLowerCase();
-    this.webhookSecret = process.env.CASHFREE_WEBHOOK_SECRET || '';
 
     const apiBase = (process.env.API_BASE_URL || process.env.BACKEND_URL || 'https://api.waadi.in')
       .trim()
@@ -135,7 +132,6 @@ class CashfreeService {
         },
         order_meta: {
           return_url: this.buildReturnUrl(options.platform || 'web'),
-          notify_url: `${this.apiBase}/api/v1/payment/cashfree/webhook`,
         },
         order_tags: {
           booking_object_id: bookingData._id ? bookingData._id.toString() : '',
@@ -224,8 +220,39 @@ class CashfreeService {
       const data = response.data;
       const status = (data.order_status || '').toUpperCase();
 
+      if (status === 'PAID') {
+        return {
+          verified: true,
+          status,
+          cashfreeOrderId: data.cf_order_id,
+          amount: data.order_amount,
+          paymentId: data.cf_order_id?.toString() || '',
+          rawData: data,
+        };
+      }
+
+      // Order may still be ACTIVE while payment is already SUCCESS at gateway
+      const paymentsResult = await this.getOrderPayments(orderId);
+      const payments = this._normalizePaymentsList(paymentsResult.payments);
+      const successPayment = payments.find(
+        (p) => (p.payment_status || '').toUpperCase() === 'SUCCESS'
+      );
+
+      if (successPayment) {
+        console.log('✅ Cashfree payment SUCCESS while order status:', status);
+        return {
+          verified: true,
+          status: 'PAID',
+          cashfreeOrderId: data.cf_order_id,
+          amount: data.order_amount,
+          paymentId: successPayment.cf_payment_id?.toString() || data.cf_order_id?.toString() || '',
+          rawData: data,
+          paymentDetails: successPayment,
+        };
+      }
+
       return {
-        verified: status === 'PAID',
+        verified: false,
         status,
         cashfreeOrderId: data.cf_order_id,
         amount: data.order_amount,
@@ -237,6 +264,30 @@ class CashfreeService {
       console.error('❌ Cashfree verifyOrder error:', msg);
       return { verified: false, status: 'ERROR', error: msg };
     }
+  }
+
+  /**
+   * Success return_url may fire before order_status becomes PAID — brief retries (callback only).
+   */
+  async verifyOrderWithRetry(orderId, options = {}) {
+    const maxAttempts = options.maxAttempts ?? 5;
+    const delayMs = options.delayMs ?? 1200;
+
+    let last = await this.verifyOrder(orderId);
+    for (let attempt = 1; attempt < maxAttempts && !last.verified; attempt += 1) {
+      console.log(`⏳ Cashfree verify retry ${attempt}/${maxAttempts - 1} for`, orderId);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      last = await this.verifyOrder(orderId);
+    }
+    return last;
+  }
+
+  /** Compare gateway amount to booking amount (2-decimal tolerance). */
+  amountsMatch(received, expected) {
+    const a = parseFloat(received);
+    const b = parseFloat(expected);
+    if (Number.isNaN(a) || Number.isNaN(b)) return false;
+    return Math.abs(a - b) < 0.01;
   }
 
   async getOrderPayments(orderId) {
@@ -258,18 +309,14 @@ class CashfreeService {
   }
 
   /**
-   * Resolve Cashfree payment tracking fields from webhook payload and/or order APIs.
+   * Resolve Cashfree payment tracking fields from order verification / payments API.
    */
   async resolvePaymentTrackingDetails(orderId, context = {}) {
-    const { verification, webhookPayment, webhookOrder } = context;
+    const { verification } = context;
 
-    let paymentTransactionId = webhookPayment?.cf_payment_id?.toString() || null;
-    let bankReference =
-      webhookPayment?.bank_reference !== undefined && webhookPayment?.bank_reference !== null
-        ? String(webhookPayment.bank_reference)
-        : null;
+    let paymentTransactionId = null;
+    let bankReference = null;
     let cashfreeOrderId =
-      webhookOrder?.cf_order_id?.toString() ||
       verification?.cashfreeOrderId?.toString() ||
       verification?.rawData?.cf_order_id?.toString() ||
       null;
@@ -315,27 +362,6 @@ class CashfreeService {
 
     if (tracking.cashfree_order_id) {
       booking.payment_details.cashfree_order_id = tracking.cashfree_order_id;
-    }
-  }
-
-  verifyWebhookSignature(rawBody, signature, timestamp) {
-    try {
-      const secret = this.webhookSecret || process.env.CASHFREE_WEBHOOK_SECRET;
-      if (!secret) {
-        console.warn('⚠️  CASHFREE_WEBHOOK_SECRET not set – skipping signature check');
-        return true;
-      }
-
-      const signedPayload = timestamp + rawBody;
-      const computed = crypto
-        .createHmac('sha256', secret)
-        .update(signedPayload)
-        .digest('base64');
-
-      return computed === signature;
-    } catch (err) {
-      console.error('❌ Cashfree signature verification error:', err);
-      return false;
     }
   }
 

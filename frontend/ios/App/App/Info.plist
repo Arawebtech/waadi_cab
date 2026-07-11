@@ -45,6 +45,17 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.waadi.payment</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>wadicab</string>
+			</array>
+		</dict>
+	</array>
 	
 	<!-- Camera permissions for profile photo upload -->
 	<key>NSCameraUsageDescription</key>

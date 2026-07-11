@@ -72,7 +72,7 @@ export default function HistoryPage() {
           if (exists) {
             return prev.map((b) => (b._id === id ? { ...b, ...booking } as HistoryBooking : b))
           }
-          return [booking as HistoryBooking, ...prev]
+          return [booking as unknown as HistoryBooking, ...prev] as HistoryBooking[]
         })
         return
       }

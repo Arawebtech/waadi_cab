@@ -92,7 +92,7 @@ A backend API for the Wadi Cab application, providing authentication and user ma
    PAYU_SALT=your_payu_salt_here
    PAYU_SUCCESS_URL= https://api.waadi.in/api/v1/payment/success
    PAYU_FAILURE_URL= https://api.waadi.in/api/v1/payment/failure
-   FRONTEND_URL=https://book.waadi.in
+   FRONTEND_URL=https://31.97.229.97:3000
    ```
 
 4. **Seed the Database** (optional)

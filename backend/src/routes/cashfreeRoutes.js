@@ -12,9 +12,6 @@ router.post('/relay', cashfreeController.renderCheckoutRelay.bind(cashfreeContro
 router.get('/success', cashfreeController.handleSuccess.bind(cashfreeController));
 router.get('/failure', cashfreeController.handleFailure.bind(cashfreeController));
 
-// Cashfree server-to-server webhook (no user session available)
-router.post('/webhook', cashfreeController.handleWebhook.bind(cashfreeController));
-
 // ─── Authenticated routes ─────────────────────────────────────────────────────
 // Initiate a new Cashfree payment session for a booking
 router.post('/initiate', authenticate, cashfreeController.initiatePayment.bind(cashfreeController));
