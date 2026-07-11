@@ -16,7 +16,7 @@ const whatsappService = require('../services/whatsappService');
 const saveCustomerLog = require('../utils/saveCustomerLog');
 const { isAppPlatformRequest } = require('../utils/platformRequest');
 const { redirectAfterPayment } = require('../utils/paymentAppRedirect');
-const { emitPaymentVerified } = require('../utils/socketEvents');
+const { emitPaymentVerified, emitNewBooking } = require('../utils/socketEvents');
 
 class CashfreeController {
   // ─── GET /payment/cashfree/relay ─────────────────────────────────────────────
@@ -306,9 +306,21 @@ class CashfreeController {
           });
         }
 
-        await this._finalizeVerifiedPayment(booking, order_id, verification, 'success-callback');
-      }
+      //   await this._finalizeVerifiedPayment(booking, order_id, verification, 'success-callback');
+      // }
 
+        // 🔥 Add this here
+  const savedBooking = await Booking.findById(booking._id)
+    .populate('visiting_state', 'name')
+    .populate('user', 'firstName lastName phoneNumber email');
+
+
+emitNewBooking(savedBooking)
+
+  console.log('📡 Emitted new booking event to admin dashboard');
+}
+
+      
       // Same status rules as PayU polling — do not treat ACTIVE/ERROR as failure on return URL
       const normalized = cashfreeService.resolvePollingStatus(
         verification.status,
