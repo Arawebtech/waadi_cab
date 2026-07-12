@@ -91,5 +91,7 @@ module.exports = {
   getCashfreeEnvCredentials,
   validatePayuEnv,
   validateCashfreeEnv,
+  syncPayuService,
+  syncCashfreeService,
   validateAndSync,
 };
