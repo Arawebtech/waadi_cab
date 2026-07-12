@@ -1,10 +1,12 @@
 
 const axios = require('axios');
+const crypto = require('crypto');
 
 class CashfreeService {
   constructor() {
     this.appId = process.env.CASHFREE_APP_ID || '';
     this.secretKey = process.env.CASHFREE_SECRET_KEY || '';
+    this.webhookSecret = process.env.CASHFREE_WEBHOOK_SECRET || '';
     this.environment = (process.env.CASHFREE_ENVIRONMENT || 'sandbox').trim().toLowerCase();
 
     const apiBase = (process.env.API_BASE_URL || process.env.BACKEND_URL || 'https://api.waadi.in')
@@ -28,6 +30,7 @@ class CashfreeService {
     ).trim();
 
     this.apiBase = apiBase;
+    this.webhookUrl = `${apiBase}/api/v1/payment/cashfree/webhook`;
 
     this.baseUrl =
       this.environment === 'production'
@@ -46,6 +49,7 @@ class CashfreeService {
     console.log('  Relay URL:', this.relayUrl);
     console.log('  Success URL:', this.successUrl);
     console.log('  Failure URL:', this.failureUrl);
+    console.log('  Webhook URL:', this.webhookUrl);
   }
 
   /**
@@ -132,6 +136,7 @@ class CashfreeService {
         },
         order_meta: {
           return_url: this.buildReturnUrl(options.platform || 'web'),
+          notify_url: this.webhookUrl,
         },
         order_tags: {
           booking_object_id: bookingData._id ? bookingData._id.toString() : '',
@@ -391,6 +396,45 @@ class CashfreeService {
       return bookingStatus === 'paid' ? 'paid' : normalized;
     }
     return normalized;
+  }
+
+  /**
+   * Verify Cashfree webhook HMAC (x-webhook-signature + x-webhook-timestamp).
+   */
+  verifyWebhookSignature(rawBody, signature, timestamp) {
+    try {
+      const secret = this.webhookSecret || process.env.CASHFREE_WEBHOOK_SECRET;
+      if (!secret) {
+        const isProd =
+          process.env.NODE_ENV === 'production' || this.environment === 'production';
+        if (isProd) {
+          console.error('❌ CASHFREE_WEBHOOK_SECRET not set – rejecting webhook in production');
+          return false;
+        }
+        console.warn('⚠️ CASHFREE_WEBHOOK_SECRET not set – skipping signature check (non-production)');
+        return true;
+      }
+
+      if (!signature || !timestamp) {
+        console.error('❌ Cashfree webhook missing signature or timestamp headers');
+        return false;
+      }
+
+      const body = Buffer.isBuffer(rawBody) ? rawBody.toString('utf8') : String(rawBody || '');
+      const signedPayload = `${timestamp}${body}`;
+      const expected = crypto
+        .createHmac('sha256', secret)
+        .update(signedPayload)
+        .digest('base64');
+
+      const sigBuf = Buffer.from(signature);
+      const expBuf = Buffer.from(expected);
+      if (sigBuf.length !== expBuf.length) return false;
+      return crypto.timingSafeEqual(sigBuf, expBuf);
+    } catch (error) {
+      console.error('❌ Cashfree webhook signature verification error:', error.message);
+      return false;
+    }
   }
 
   validateConfig() {

@@ -29,6 +29,8 @@ const validationRoutes = require('./src/routes/validationRoutes');
 const cashfreeRoutes      = require('./src/routes/cashfreeRoutes');
 const gatewayAdminRoutes  = require('./src/routes/gatewayAdminRoutes');
 const logRoutes           = require('./src/routes/logRoutes');
+const { startCashfreeReconciliationJob } = require('./src/jobs/cashfreeReconciliation');
+const gatewayCredentials = require('./src/utils/gatewayCredentials');
  
 const whatsappService = require('./src/services/whatsappService');
 
@@ -135,6 +137,7 @@ if (process.env.NODE_ENV === 'development') {
 // Raw body parser for payment callbacks (before other body parsers)
 app.use('/api/v1/payment/success', express.raw({ type: ['application/x-www-form-urlencoded', 'multipart/form-data'], limit: '10mb' }));
 app.use('/api/v1/payment/failure', express.raw({ type: ['application/x-www-form-urlencoded', 'multipart/form-data'], limit: '10mb' }));
+app.use('/api/v1/payment/cashfree/webhook', express.raw({ type: 'application/json', limit: '2mb' }));
 
 // Correlation ID (early — available for all handlers)
 app.use(correlationId);
@@ -157,7 +160,11 @@ mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-.then(() => console.log('✅ MongoDB Connected'))
+.then(() => {
+  console.log('✅ MongoDB Connected');
+  gatewayCredentials.syncCashfreeService();
+  startCashfreeReconciliationJob();
+})
 .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
 
