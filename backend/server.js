@@ -137,7 +137,7 @@ if (process.env.NODE_ENV === 'development') {
 // Raw body parser for payment callbacks (before other body parsers)
 app.use('/api/v1/payment/success', express.raw({ type: ['application/x-www-form-urlencoded', 'multipart/form-data'], limit: '10mb' }));
 app.use('/api/v1/payment/failure', express.raw({ type: ['application/x-www-form-urlencoded', 'multipart/form-data'], limit: '10mb' }));
-app.use('/api/v1/payment/cashfree/webhook', express.raw({ type: 'application/json', limit: '2mb' }));
+app.use('/api/v1/payment/cashfree/webhook', express.raw({ type: '*/*', limit: '2mb' }));
 
 // Correlation ID (early — available for all handlers)
 app.use(correlationId);

@@ -400,19 +400,18 @@ class CashfreeService {
 
   /**
    * Verify Cashfree webhook HMAC (x-webhook-signature + x-webhook-timestamp).
+   * Cashfree signs with the PG Client Secret — not a separate webhook secret.
+   * @see https://www.cashfree.com/docs/payments/online/webhooks/signature-verification
    */
   verifyWebhookSignature(rawBody, signature, timestamp) {
     try {
-      const secret = this.webhookSecret || process.env.CASHFREE_WEBHOOK_SECRET;
-      if (!secret) {
-        const isProd =
-          process.env.NODE_ENV === 'production' || this.environment === 'production';
-        if (isProd) {
-          console.error('❌ CASHFREE_WEBHOOK_SECRET not set – rejecting webhook in production');
-          return false;
-        }
-        console.warn('⚠️ CASHFREE_WEBHOOK_SECRET not set – skipping signature check (non-production)');
-        return true;
+      const clientSecret = this.secretKey || process.env.CASHFREE_SECRET_KEY;
+      const webhookSecret = this.webhookSecret || process.env.CASHFREE_WEBHOOK_SECRET;
+      const secretsToTry = [...new Set([clientSecret, webhookSecret].filter(Boolean))];
+
+      if (!secretsToTry.length) {
+        console.error('❌ Cashfree client secret not set – cannot verify webhook');
+        return false;
       }
 
       if (!signature || !timestamp) {
@@ -422,15 +421,22 @@ class CashfreeService {
 
       const body = Buffer.isBuffer(rawBody) ? rawBody.toString('utf8') : String(rawBody || '');
       const signedPayload = `${timestamp}${body}`;
-      const expected = crypto
-        .createHmac('sha256', secret)
-        .update(signedPayload)
-        .digest('base64');
 
-      const sigBuf = Buffer.from(signature);
-      const expBuf = Buffer.from(expected);
-      if (sigBuf.length !== expBuf.length) return false;
-      return crypto.timingSafeEqual(sigBuf, expBuf);
+      for (const secret of secretsToTry) {
+        const expected = crypto
+          .createHmac('sha256', secret)
+          .update(signedPayload)
+          .digest('base64');
+
+        const sigBuf = Buffer.from(signature);
+        const expBuf = Buffer.from(expected);
+        if (sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf)) {
+          return true;
+        }
+      }
+
+      console.error('❌ Cashfree webhook signature mismatch');
+      return false;
     } catch (error) {
       console.error('❌ Cashfree webhook signature verification error:', error.message);
       return false;

@@ -33,7 +33,9 @@ const checkMaintenanceMode = async (req, res, next) => {
       const isBookingCreationBlocked = (
         req.path.startsWith('/api/v1/bookings') && req.method === 'POST'
       );
-      const isPaymentBlocked = req.path.startsWith('/api/v1/payment');
+      const isPaymentBlocked =
+        req.path.startsWith('/api/v1/payment') &&
+        !req.path.startsWith('/api/v1/payment/cashfree/webhook');
 
       // Everything else proceeds (login, signup, profile, history, downloads, inquiries, etc.)
       if (!(isBookingCreationBlocked || isPaymentBlocked)) {

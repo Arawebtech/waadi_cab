@@ -413,6 +413,16 @@ class CashfreeController {
       paymentStatus: paymentData.payment_status,
     });
 
+    // Cashfree dashboard "Test" and ping events — acknowledge immediately
+    if (
+      !eventType ||
+      eventType === 'WEBHOOK' ||
+      eventType === 'TEST' ||
+      eventType.includes('TEST')
+    ) {
+      return res.status(200).json({ success: true, message: 'Webhook endpoint reachable' });
+    }
+
     try {
       const paymentStatus = (paymentData.payment_status || '').toUpperCase();
       const isSuccessEvent =
