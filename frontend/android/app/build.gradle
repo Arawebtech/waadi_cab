@@ -18,14 +18,14 @@ android {
     //     }
     // }
 
-signingConfigs {
-    release {
-        storeFile file("upload-keystore.jks")
-        storePassword "@iamsoftwaremaker"
-        keyAlias "upload"
-        keyPassword "@iamsoftwaremaker"
-    }
-}
+// signingConfigs {
+//     release {
+//         storeFile file("upload-keystore.jks")
+//         storePassword "@iamsoftwaremaker"
+//         keyAlias "upload"
+//         keyPassword "@iamsoftwaremaker"
+//     }
+// }
     
     defaultConfig {
         applicationId "com.MP.Waadi_App"
@@ -40,19 +40,19 @@ signingConfigs {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
-    // buildTypes {
-    //     release {
-    //         minifyEnabled false
-    //         proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-    //     }
-    // }
-    
     buildTypes {
-    release {
-        signingConfig signingConfigs.release
-        minifyEnabled false
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
     }
-}
+    
+//     buildTypes {
+//     release {
+//         signingConfig signingConfigs.release
+//         minifyEnabled false
+//     }
+// }
 }
 
 repositories {
