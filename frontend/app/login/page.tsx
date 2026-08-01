@@ -13,8 +13,9 @@ import { LanguageToggle } from "@/components/language-toggle"
 import { useLanguage } from "@/hooks/use-language"
 import { useToast } from "@/components/ui/use-toast"
 import { authAPI, type LoginRequest } from "@/lib/api"
-import { TermsAndConditions } from "@/components/terms-and-conditions"
+// import { TermsAndConditions } from "@/components/terms-and-conditions"
 import { Phone, Loader2, AlertCircle, UserPlus } from "lucide-react"
+import LegalPage from "@/components/legel"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -188,8 +189,12 @@ export default function LoginPage() {
         {/* Service Description - Bottom 40% */}
         <div className="text-center mb-8 flex-shrink-0">
           <h2 className="text-2xl font-bold text-black mb-4">Professional Taxi Services</h2>
-          <p className="text-base text-black leading-relaxed max-w-sm mx-auto mb-8">
+          {/* <p className="text-base text-black leading-relaxed max-w-sm mx-auto mb-8">
             Connect with verified drivers and book your ride instantly. Safe, reliable, and professional.
+          </p> */}
+
+            <p className="text-base text-black leading-relaxed max-w-sm mx-auto mb-8">
+          Disclaimer: Waadi is a private application owned by JAFRIDA (Waadi Tax & Insurance Solutions). It provides independent transport consultancy and is NOT an official government app. We have no affiliation with MoRTH, VAHAN, or any State Transport Department.
           </p>
         </div>
 
@@ -333,7 +338,8 @@ export default function LoginPage() {
       </div>
 
       {/* Terms and Conditions Dialog */}
-      <TermsAndConditions open={termsDialogOpen} onOpenChange={setTermsDialogOpen} />
+      {/* <TermsAndConditions open={termsDialogOpen} onOpenChange={setTermsDialogOpen} /> */}
+      <LegalPage open={termsDialogOpen} onOpenChange={setTermsDialogOpen} />
     </div>
   )
 }

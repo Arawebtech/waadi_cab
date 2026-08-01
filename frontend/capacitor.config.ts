@@ -14,7 +14,7 @@
 //  */
 // const devServerUrl = process.env.CAPACITOR_SERVER_URL?.trim();
 // const appHostname =
-//   process.env.CAPACITOR_APP_HOSTNAME?.trim() || '31.97.229.97:3000';
+//   process.env.CAPACITOR_APP_HOSTNAME?.trim() || '192.168.1.4:3000';
 
 // const config: CapacitorConfig = {
 //   appId: 'com.MP.Waadi_App',

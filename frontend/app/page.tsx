@@ -21,7 +21,7 @@ export default function LandingPage() {
     requestPushPermission();
   }, []);
   console.log("LandingPage");
-  
+
   return (
     <MobileLayout>
       <div className="h-screen flex flex-col px-6 pb-8 bg-gray-50">
@@ -42,7 +42,7 @@ export default function LandingPage() {
               <span className="text-lg font-semibold text-blue-600">Cab</span>
             </div>
           </div>
-          
+
           {/* Tagline with divider */}
           <div className="w-16 h-0.5 bg-gray-800 mb-3"></div>
           <h2 className="text-center text-gray-800 font-medium">
@@ -69,10 +69,14 @@ export default function LandingPage() {
           <h1 className="text-2xl font-bold text-gray-900 mb-3 text-center">
             Professional Taxi Services
           </h1>
-          
+
           {/* Subtitle */}
-          <p className="text-gray-600 text-center leading-relaxed max-w-xs">
+          {/* <p className="text-gray-600 text-center leading-relaxed max-w-xs">
             Connect with verified drivers and book your ride instantly. Safe, reliable, and professional.
+          </p> */}
+
+          <p className="text-gray-600 text-center leading-relaxed max-w-xs">
+            Disclaimer: Waadi is a private application owned by JAFRIDA (Waadi Tax & Insurance Solutions). It provides independent transport consultancy and is NOT an official government app. We have no affiliation with MoRTH, VAHAN, or any State Transport Department.
           </p>
         </div>
 

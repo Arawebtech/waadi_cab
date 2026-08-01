@@ -28,7 +28,7 @@
 
     var host = location.hostname || '';
 
-    var isBundledHost = host === '31.97.229.97:3000' || host === 'localhost';
+    var isBundledHost = host === '192.168.1.4:3000' || host === 'localhost';
 
     return isBundledHost && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
 

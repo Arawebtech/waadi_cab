@@ -18,7 +18,7 @@ export const api_url = normalizeApiHost(process.env.NEXT_PUBLIC_API_URL)
 export const base_url = `${api_url}/api/v1`
 
 // Frontend URL configuration
-export const frontend_url = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://31.97.229.97:3000"
+export const frontend_url = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://192.168.1.4:3000"
 
 // PayU Payment Gateway Configuration
 export const payuConfig = {

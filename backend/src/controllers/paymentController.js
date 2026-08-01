@@ -2901,7 +2901,7 @@ await saveCustomerLog({
         const frontendBase =
           process.env.FRONTEND_URL ||
           process.env.CUSTOMER_APP_URL ||
-          'http://31.97.229.97:3000';
+          'http://192.168.1.4:3000';
         return res.redirect(`${frontendBase.replace(/\/+$/, '')}/payment/success?txnid=${txnid}&status=success&amount=${amount}&bookingId=${booking.bookingId}`);
       }
 
@@ -3155,7 +3155,7 @@ await saveCustomerLog({
         const frontendBase = (
           process.env.FRONTEND_URL ||
           process.env.CUSTOMER_APP_URL ||
-          'http://31.97.229.97:3000'
+          'http://192.168.1.4:3000'
         ).replace(/\/+$/, '');
         return res.redirect(`${frontendBase}/payment/failure?txnid=${txnid}&status=failure&amount=${amount}&error=${encodeURIComponent(error_Message || 'Payment failed')}`);
       }
