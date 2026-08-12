@@ -44,7 +44,9 @@ export default function PaymentSuccessContent() {
 
       const gatewayParam = urlParams.get('gateway')
       const gateway =
-        gatewayParam === 'payu' || gatewayParam === 'cashfree' ? gatewayParam : 'cashfree'
+        gatewayParam === 'payu' || gatewayParam === 'cashfree' || gatewayParam === 'razorpay'
+          ? gatewayParam
+          : 'cashfree'
 
       if (status === 'pending') {
         router.replace(

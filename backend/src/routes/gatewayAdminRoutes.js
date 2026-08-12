@@ -33,5 +33,6 @@ router.put('/cashfree', gatewayAdminController.updateCashfreeConfig.bind(gateway
 
 // PUT  /admin/payment-gateway/payu    – optionally override PayU credentials in DB
 router.put('/payu', gatewayAdminController.updatePayuConfig.bind(gatewayAdminController));
+router.put('/razorpay', gatewayAdminController.updateRazorpayConfig.bind(gatewayAdminController));
 
 module.exports = router;

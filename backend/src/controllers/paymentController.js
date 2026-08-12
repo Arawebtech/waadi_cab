@@ -2443,6 +2443,9 @@ class PaymentController {
         booking.payment_details.transaction_id = paymentPreparation.paymentData.txnid;
       } else if (gatewayName === 'cashfree') {
         booking.payment_details.transaction_id = paymentPreparation.paymentData.txnid;
+      } else if (gatewayName === 'razorpay') {
+        booking.payment_details.transaction_id = paymentPreparation.paymentData.txnid;
+        booking.payment_details.razorpay_order_id = paymentPreparation.paymentData.razorpay_order_id;
       }
       booking.payment_details.payment_method = gatewayName;
       await booking.save();
@@ -2495,7 +2498,9 @@ class PaymentController {
             booking: { id: booking._id, bookingId: booking.bookingId, amount: booking.amount, status: booking.status }
           }
         });
-      } else {
+      }
+
+      if (gatewayName === 'cashfree') {
         return res.status(200).json({
           success: true,
           message: 'Cashfree payment initiated',
@@ -2507,6 +2512,17 @@ class PaymentController {
           }
         });
       }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Razorpay payment initiated',
+        data: {
+          gateway: 'razorpay',
+          paymentUrl: paymentPreparation.paymentUrl,
+          paymentData: paymentPreparation.paymentData,
+          booking: { id: booking._id, bookingId: booking.bookingId, amount: booking.amount, status: booking.status }
+        }
+      });
 
     } catch (error) {
       console.error('Initiate payment error:', error);
@@ -2901,7 +2917,7 @@ await saveCustomerLog({
         const frontendBase =
           process.env.FRONTEND_URL ||
           process.env.CUSTOMER_APP_URL ||
-          'http://192.168.1.4:3000';
+          'http://192.168.1.8:3000';
         return res.redirect(`${frontendBase.replace(/\/+$/, '')}/payment/success?txnid=${txnid}&status=success&amount=${amount}&bookingId=${booking.bookingId}`);
       }
 
@@ -3155,7 +3171,7 @@ await saveCustomerLog({
         const frontendBase = (
           process.env.FRONTEND_URL ||
           process.env.CUSTOMER_APP_URL ||
-          'http://192.168.1.4:3000'
+          'http://192.168.1.8:3000'
         ).replace(/\/+$/, '');
         return res.redirect(`${frontendBase}/payment/failure?txnid=${txnid}&status=failure&amount=${amount}&error=${encodeURIComponent(error_Message || 'Payment failed')}`);
       }

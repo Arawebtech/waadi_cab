@@ -8,10 +8,11 @@ import { Capacitor } from '@capacitor/core'
 import { base_url } from '../environment'
 import { authenticatedFetch, tokenManager } from './api'
 import { CashfreePaymentData } from './cashfree'
+import { RazorpayPaymentData } from './razorpay'
 import { PayUResponse } from './payu'
 import journeyLogger from './journeyLogger'
 
-export type PaymentGatewayName = 'payu' | 'cashfree'
+export type PaymentGatewayName = 'payu' | 'cashfree' | 'razorpay'
 
 export interface BackendPayUPayment {
   gateway: 'payu'
@@ -27,7 +28,14 @@ export interface BackendCashfreePayment {
   message?: string
 }
 
-export type BackendPaymentPayload = BackendPayUPayment | BackendCashfreePayment
+export interface BackendRazorpayPayment {
+  gateway: 'razorpay'
+  paymentUrl: string
+  paymentData: RazorpayPaymentData
+  message?: string
+}
+
+export type BackendPaymentPayload = BackendPayUPayment | BackendCashfreePayment | BackendRazorpayPayment
 
 function toStringRecord(data: Record<string, string | undefined>): Record<string, string> {
   const out: Record<string, string> = {}
@@ -201,6 +209,70 @@ export function getPaymentReference(payment: BackendPaymentPayload): string {
   return payment.paymentData.txnid || ''
 }
 
+async function openRazorpayNativeRelay(relayParams: Record<string, string>): Promise<PayUResponse> {
+  const { Browser } = await import('@capacitor/browser')
+  const relayUrl = `${base_url}/payment/razorpay/relay?${new URLSearchParams(relayParams).toString()}`
+  await Browser.open({ url: relayUrl, windowName: '_self' })
+  return { status: 'success', txnId: relayParams.txnid || '', amount: relayParams.amount || '' }
+}
+
+function submitRazorpayRelayForm(
+  relayParams: Record<string, string>,
+  options?: { preferSameTabOnIOS?: boolean; targetWindowName?: string }
+): PayUResponse {
+  const form = document.createElement('form')
+  form.method = 'POST'
+  form.action = `${base_url}/payment/razorpay/relay`
+
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
+  if (options?.targetWindowName) {
+    form.target = options.targetWindowName
+  } else if (Capacitor.isNativePlatform()) {
+    form.target = '_self'
+  } else if (isIOS) {
+    form.target = options?.preferSameTabOnIOS !== false ? '_self' : '_blank'
+  } else {
+    form.target = '_blank'
+  }
+
+  Object.entries(relayParams).forEach(([key, value]) => {
+    const input = document.createElement('input')
+    input.type = 'hidden'
+    input.name = key
+    input.value = value ?? ''
+    form.appendChild(input)
+  })
+
+  document.body.appendChild(form)
+  form.submit()
+  document.body.removeChild(form)
+
+  return { status: 'success', txnId: relayParams.txnid || '', amount: relayParams.amount || '' }
+}
+
+function buildRazorpayRelayParams(paymentData: Record<string, string>): Record<string, string> {
+  const required = ['txnid', 'razorpay_order_id', 'key_id', 'amount']
+  for (const key of required) {
+    if (!paymentData[key]) {
+      throw new Error(`Razorpay checkout missing ${key}`)
+    }
+  }
+  return {
+    txnid: paymentData.txnid,
+    razorpay_order_id: paymentData.razorpay_order_id,
+    key_id: paymentData.key_id,
+    amount: paymentData.amount,
+    currency: paymentData.currency || 'INR',
+    name: paymentData.name || 'Waadi Cab',
+    description: paymentData.description || 'Border Tax Pass',
+    prefill_name: paymentData.prefill_name || '',
+    prefill_email: paymentData.prefill_email || '',
+    prefill_contact: paymentData.prefill_contact || '',
+    callback_url: paymentData.callback_url || '',
+    ...(paymentData.platform ? { platform: paymentData.platform } : {}),
+  }
+}
+
 export async function initiatePaymentFromBackend(
   payment: BackendPaymentPayload,
   options?: { preferSameTabOnIOS?: boolean }
@@ -210,6 +282,18 @@ export async function initiatePaymentFromBackend(
       return openPayUNativeRelay(payment.paymentData)
     }
     return submitPayUForm(payment.paymentUrl, payment.paymentData, options)
+  }
+
+  if (payment.gateway === 'razorpay') {
+    const rzData = toStringRecord(payment.paymentData as Record<string, string | undefined>)
+    if (!rzData.platform && Capacitor.isNativePlatform()) {
+      rzData.platform = 'app'
+    }
+    const relayParams = buildRazorpayRelayParams(rzData)
+    if (Capacitor.isNativePlatform()) {
+      return openRazorpayNativeRelay(relayParams)
+    }
+    return submitRazorpayRelayForm(relayParams, options)
   }
 
   const cfData = toStringRecord(payment.paymentData as Record<string, string | undefined>)
@@ -248,7 +332,9 @@ export async function verifyPaymentWithBackend(
   const statusPath =
     gateway === 'cashfree'
       ? `/payment/cashfree/status/${encodeURIComponent(referenceId)}`
-      : `/payment/status/${encodeURIComponent(referenceId)}`
+      : gateway === 'razorpay'
+        ? `/payment/razorpay/status/${encodeURIComponent(referenceId)}`
+        : `/payment/status/${encodeURIComponent(referenceId)}`
 
   const response = await authenticatedFetch(`${base_url}${statusPath}`, {
     method: 'GET',
@@ -260,6 +346,7 @@ export async function verifyPaymentWithBackend(
 
 export function getGatewayLabel(gateway?: PaymentGatewayName): string {
   if (gateway === 'cashfree') return 'Cashfree Payment Gateway'
+  if (gateway === 'razorpay') return 'Razorpay Payment Gateway'
   if (gateway === 'payu') return 'PayU Payment Gateway'
   return 'Secure Payment Gateway'
 }
@@ -269,6 +356,11 @@ export function isBackendPaymentPayload(value: unknown): value is BackendPayment
   const gateway = (value as BackendPaymentPayload).gateway
   if (gateway === 'payu') {
     return !!(value as BackendPayUPayment).paymentUrl && !!(value as BackendPayUPayment).paymentData
+  }
+  if (gateway === 'razorpay') {
+    const rz = value as BackendRazorpayPayment
+    const pd = rz.paymentData
+    return !!(pd?.txnid && pd?.razorpay_order_id && pd?.key_id && pd?.amount)
   }
   if (gateway !== 'cashfree') return false
   const cf = value as BackendCashfreePayment

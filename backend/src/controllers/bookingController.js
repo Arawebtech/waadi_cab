@@ -690,6 +690,9 @@ class BookingController {
               savedBooking.payment_details.transaction_id = paymentPreparation.paymentData.txnid;
             } else if (gatewayName === 'cashfree') {
               savedBooking.payment_details.transaction_id = paymentPreparation.paymentData.txnid;
+            } else if (gatewayName === 'razorpay') {
+              savedBooking.payment_details.transaction_id = paymentPreparation.paymentData.txnid;
+              savedBooking.payment_details.razorpay_order_id = paymentPreparation.paymentData.razorpay_order_id;
             }
             savedBooking.payment_details.payment_method = gatewayName;
             await savedBooking.save();
@@ -715,6 +718,13 @@ class BookingController {
                 paymentUrl: paymentPreparation.paymentUrl,
                 paymentData: paymentPreparation.paymentData,
                 message: 'Cashfree payment initiated',
+              };
+            } else if (gatewayName === 'razorpay') {
+              paymentData = {
+                gateway: 'razorpay',
+                paymentUrl: paymentPreparation.paymentUrl,
+                paymentData: paymentPreparation.paymentData,
+                message: 'Razorpay payment initiated',
               };
             }
 

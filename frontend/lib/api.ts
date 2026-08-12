@@ -948,7 +948,22 @@ export interface CashfreePaymentPayload {
   message: string
 }
 
-export type Payment = PayUPaymentPayload | CashfreePaymentPayload | null
+export interface RazorpayPaymentPayload {
+  gateway: 'razorpay'
+  paymentUrl: string
+  paymentData: {
+    txnid: string
+    razorpay_order_id: string
+    key_id: string
+    amount: string
+    currency?: string
+    callback_url?: string
+    platform?: string
+  }
+  message: string
+}
+
+export type Payment = PayUPaymentPayload | CashfreePaymentPayload | RazorpayPaymentPayload | null
 
 export interface BookingResponse {
   success: boolean

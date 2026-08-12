@@ -27,9 +27,11 @@ const appVersionRoutes = require('./src/routes/appVersionRoutes');
 const versionTrackingRoutes = require('./src/routes/versionTrackingRoutes');
 const validationRoutes = require('./src/routes/validationRoutes');
 const cashfreeRoutes      = require('./src/routes/cashfreeRoutes');
+const razorpayRoutes      = require('./src/routes/razorpayRoutes');
 const gatewayAdminRoutes  = require('./src/routes/gatewayAdminRoutes');
 const logRoutes           = require('./src/routes/logRoutes');
 const { startCashfreeReconciliationJob } = require('./src/jobs/cashfreeReconciliation');
+const { startRazorpayReconciliationJob } = require('./src/jobs/razorpayReconciliation');
 const gatewayCredentials = require('./src/utils/gatewayCredentials');
  
 const whatsappService = require('./src/services/whatsappService');
@@ -61,7 +63,7 @@ const allowedOrigins = [
   'http://192.168.1.8:3001',
   'http://192.168.1.36:3000',
   'http://31.97.229.97:3001',
-  'http://192.168.1.4:3000',
+  'http://192.168.1.8:3000',
   'http://31.97.229.97:3002',
 
   'http://127.0.0.1:3000',
@@ -115,6 +117,7 @@ const helmetMiddleware = helmet({
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/v1/payment/relay')) return next();
   if (req.path.startsWith('/api/v1/payment/cashfree/relay')) return next();
+  if (req.path.startsWith('/api/v1/payment/razorpay/relay')) return next();
   return helmetMiddleware(req, res, next);
 });
 app.use(compression());
@@ -138,6 +141,7 @@ if (process.env.NODE_ENV === 'development') {
 app.use('/api/v1/payment/success', express.raw({ type: ['application/x-www-form-urlencoded', 'multipart/form-data'], limit: '10mb' }));
 app.use('/api/v1/payment/failure', express.raw({ type: ['application/x-www-form-urlencoded', 'multipart/form-data'], limit: '10mb' }));
 app.use('/api/v1/payment/cashfree/webhook', express.raw({ type: '*/*', limit: '2mb' }));
+app.use('/api/v1/payment/razorpay/webhook', express.raw({ type: '*/*', limit: '2mb' }));
 
 // Correlation ID (early — available for all handlers)
 app.use(correlationId);
@@ -163,7 +167,9 @@ mongoose.connect(process.env.MONGODB_URI, {
 .then(() => {
   console.log('✅ MongoDB Connected');
   gatewayCredentials.syncCashfreeService();
+  gatewayCredentials.syncRazorpayService();
   startCashfreeReconciliationJob();
+  startRazorpayReconciliationJob();
 })
 .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
@@ -254,6 +260,7 @@ app.use('/api/v1/plans', checkMaintenanceMode, planRoutes);
 app.use('/api/v1/bookings', checkMaintenanceMode, bookingRoutes);
 app.use('/api/v1/payment', checkMaintenanceMode, paymentRoutes);
 app.use('/api/v1/payment/cashfree', checkMaintenanceMode, cashfreeRoutes);
+app.use('/api/v1/payment/razorpay', checkMaintenanceMode, razorpayRoutes);
  
 // Gateway admin routes (admin panel – switch/configure gateways)
 app.use('/api/v1/admin/payment-gateway', gatewayAdminRoutes);

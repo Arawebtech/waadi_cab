@@ -7,8 +7,7 @@
 
 const payuService = require('../services/payuService');
 const cashfreeService = require('../services/cashfreeService');
-
-const VALID_GATEWAYS = ['payu', 'cashfree'];
+const razorpayService = require('../services/razorpayService');
 
 function getPayuEnvCredentials() {
   return {
@@ -78,20 +77,58 @@ function syncCashfreeService() {
   return { ...validation, service: cashfreeService };
 }
 
+function getRazorpayEnvCredentials() {
+  return {
+    keyId: process.env.RAZORPAY_KEY_ID || '',
+    keySecret: process.env.RAZORPAY_KEY_SECRET || '',
+    webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || '',
+    environment: (process.env.RAZORPAY_ENVIRONMENT || 'production').trim().toLowerCase(),
+  };
+}
+
+function validateRazorpayEnv() {
+  const credentials = getRazorpayEnvCredentials();
+  const errors = [];
+  if (!credentials.keyId) errors.push('Razorpay Key ID is not set in .env');
+  if (!credentials.keySecret) errors.push('Razorpay Key Secret is not set in .env');
+  return { isValid: errors.length === 0, errors, credentials };
+}
+
+function syncRazorpayService() {
+  const validation = validateRazorpayEnv();
+  if (!validation.isValid) {
+    return { ...validation, service: razorpayService };
+  }
+
+  const { keyId, keySecret, webhookSecret, environment } = validation.credentials;
+  razorpayService.keyId = keyId;
+  razorpayService.keySecret = keySecret;
+  if (webhookSecret) razorpayService.webhookSecret = webhookSecret;
+  razorpayService.environment = (environment || 'production').trim().toLowerCase();
+
+  return { ...validation, service: razorpayService };
+}
+
 function validateAndSync(gatewayName) {
   if (gatewayName === 'cashfree') {
     return syncCashfreeService();
+  }
+  if (gatewayName === 'razorpay') {
+    return syncRazorpayService();
   }
   return syncPayuService();
 }
 
 module.exports = {
-  VALID_GATEWAYS,
+  VALID_GATEWAYS: ['payu', 'cashfree', 'razorpay'],
   getPayuEnvCredentials,
   getCashfreeEnvCredentials,
   validatePayuEnv,
   validateCashfreeEnv,
+  getRazorpayEnvCredentials,
+  validateRazorpayEnv,
   syncPayuService,
   syncCashfreeService,
+  syncRazorpayService,
   validateAndSync,
 };

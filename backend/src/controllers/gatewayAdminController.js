@@ -42,9 +42,17 @@ class GatewayAdminController {
             appIdSet: !!config.cashfree.appId,
             secretKeySet: !!config.cashfree.secretKey,
             webhookSecretSet: !!config.cashfree.webhookSecret,
-            // Env-var fallback status
             envAppIdSet: !!process.env.CASHFREE_APP_ID,
             envSecretSet: !!process.env.CASHFREE_SECRET_KEY,
+          },
+          razorpay: {
+            enabled: config.razorpay?.enabled ?? false,
+            environment: config.razorpay?.environment,
+            keyIdSet: !!config.razorpay?.keyId,
+            keySecretSet: !!config.razorpay?.keySecret,
+            webhookSecretSet: !!config.razorpay?.webhookSecret,
+            envKeyIdSet: !!process.env.RAZORPAY_KEY_ID,
+            envKeySecretSet: !!process.env.RAZORPAY_KEY_SECRET,
           },
           updatedAt: config.updatedAt,
           updatedBy: config.updatedBy,
@@ -59,7 +67,7 @@ class GatewayAdminController {
   // ─── POST /admin/payment-gateway/switch ───────────────────────────────────
   /**
    * Switch the active gateway.
-   * Body: { gateway: 'payu' | 'cashfree' }
+   * Body: { gateway: 'payu' | 'cashfree' | 'razorpay' }
    */
   async switchGateway(req, res) {
     try {
@@ -67,10 +75,10 @@ class GatewayAdminController {
 
       console.log("get the gatway data",gateway)
 
-      if (!gateway || !['payu', 'cashfree'].includes(gateway)) {
+      if (!gateway || !['payu', 'cashfree', 'razorpay'].includes(gateway)) {
         return res.status(400).json({
           success: false,
-          message: "gateway must be 'payu' or 'cashfree'",
+          message: "gateway must be 'payu', 'cashfree', or 'razorpay'",
         });
       }
 
@@ -81,6 +89,16 @@ class GatewayAdminController {
           return res.status(400).json({
             success: false,
             message: `Cashfree credentials are not configured in .env: ${errors.join('; ')}`,
+          });
+        }
+      }
+
+      if (gateway === 'razorpay') {
+        const { isValid, errors } = gatewayCredentials.validateRazorpayEnv();
+        if (!isValid) {
+          return res.status(400).json({
+            success: false,
+            message: `Razorpay credentials are not configured in .env: ${errors.join('; ')}`,
           });
         }
       }
@@ -202,6 +220,53 @@ class GatewayAdminController {
     }
   }
 
+  // ─── PUT /admin/payment-gateway/razorpay ─────────────────────────────────
+  async updateRazorpayConfig(req, res) {
+    try {
+      const { keyId, keySecret, webhookSecret, environment } = req.body;
+      const allowedEnvs = ['test', 'production'];
+      if (environment && !allowedEnvs.includes(environment)) {
+        return res.status(400).json({
+          success: false,
+          message: "environment must be 'test' or 'production'",
+        });
+      }
+
+      const config = await PaymentGatewayConfig.getConfig();
+      if (!config.razorpay) {
+        config.razorpay = {
+          enabled: false,
+          environment: 'production',
+          keyId: '',
+          keySecret: '',
+          webhookSecret: '',
+        };
+      }
+      if (keyId) config.razorpay.keyId = keyId.trim();
+      if (keySecret) config.razorpay.keySecret = keySecret.trim();
+      if (webhookSecret) config.razorpay.webhookSecret = webhookSecret.trim();
+      if (environment) config.razorpay.environment = environment;
+      config.updatedBy = null;
+      await config.save();
+
+      gatewayCredentials.validateAndSync('razorpay');
+
+      return res.status(200).json({
+        success: true,
+        message: 'Razorpay configuration updated successfully',
+        data: {
+          environment: config.razorpay.environment,
+          keyIdSet: !!config.razorpay.keyId,
+          keySecretSet: !!config.razorpay.keySecret,
+          webhookSecretSet: !!config.razorpay.webhookSecret,
+        },
+      });
+    } catch (error) {
+      console.error('❌ GatewayAdminController.updateRazorpayConfig error:', error);
+      return res.status(500).json({ success: false, message: 'Failed to update Razorpay config' });
+    }
+  }
+
   // ─── GET /admin/payment-gateway/active ───────────────────────────────────
   /**
    * Public-ish endpoint (still auth-protected) used by the checkout page
@@ -216,6 +281,13 @@ class GatewayAdminController {
       if (config.activeGateway === 'cashfree') {
         const { credentials } = gatewayCredentials.validateCashfreeEnv();
         data.cashfree = {
+          environment: credentials.environment,
+        };
+      }
+
+      if (config.activeGateway === 'razorpay') {
+        const { credentials } = gatewayCredentials.validateRazorpayEnv();
+        data.razorpay = {
           environment: credentials.environment,
         };
       }

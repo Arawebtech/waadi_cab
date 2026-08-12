@@ -35,7 +35,8 @@ const checkMaintenanceMode = async (req, res, next) => {
       );
       const isPaymentBlocked =
         req.path.startsWith('/api/v1/payment') &&
-        !req.path.startsWith('/api/v1/payment/cashfree/webhook');
+        !req.path.startsWith('/api/v1/payment/cashfree/webhook') &&
+        !req.path.startsWith('/api/v1/payment/razorpay/webhook');
 
       // Everything else proceeds (login, signup, profile, history, downloads, inquiries, etc.)
       if (!(isBookingCreationBlocked || isPaymentBlocked)) {

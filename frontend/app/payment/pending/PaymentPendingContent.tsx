@@ -94,14 +94,14 @@ export default function PaymentPendingContent() {
     }
 
     const gw = params.get('gateway')
-    if (gw === 'payu' || gw === 'cashfree') {
+    if (gw === 'payu' || gw === 'cashfree' || gw === 'razorpay') {
       setGateway(gw)
     } else {
       try {
         const pending = localStorage.getItem('pendingPayment')
         if (pending) {
           const parsed = JSON.parse(pending)
-          if (parsed.gateway === 'payu' || parsed.gateway === 'cashfree') {
+          if (parsed.gateway === 'payu' || parsed.gateway === 'cashfree' || parsed.gateway === 'razorpay') {
             setGateway(parsed.gateway)
           }
         }

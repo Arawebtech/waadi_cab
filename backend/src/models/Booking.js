@@ -82,6 +82,8 @@ const bookingSchema = new mongoose.Schema({
     bank_reference: { type: String, default: null },
     /** Cashfree cf_order_id */
     cashfree_order_id: { type: String, default: null },
+    /** Razorpay order_id */
+    razorpay_order_id: { type: String, default: null },
   },
   validity: {
     valid_from: Date,
@@ -124,6 +126,7 @@ bookingSchema.index({ 'payment_details.transaction_id': 1 });
 bookingSchema.index({ 'payment_details.payment_transaction_id': 1 });
 bookingSchema.index({ 'payment_details.bank_reference': 1 });
 bookingSchema.index({ 'payment_details.cashfree_order_id': 1 });
+bookingSchema.index({ 'payment_details.razorpay_order_id': 1 });
 bookingSchema.index({ payment_id: 1 });
 bookingSchema.index({ payment_status: 1 });
 bookingSchema.index({ processed_by_admin: 1 });

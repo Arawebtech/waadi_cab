@@ -6,7 +6,7 @@ const paymentGatewayConfigSchema = new mongoose.Schema(
     // ─── Active Gateway ────────────────────────────────────────────────────────
     activeGateway: {
       type: String,
-      enum: ['payu', 'cashfree'],
+      enum: ['payu', 'cashfree', 'razorpay'],
       default: 'payu',
       required: true,
     },
@@ -28,7 +28,14 @@ const paymentGatewayConfigSchema = new mongoose.Schema(
       environment: { type: String, enum: ['sandbox', 'production'], default: 'sandbox' },
       appId: { type: String, default: '' },
       secretKey: { type: String, default: '' },
-      // Webhook secret for signature verification
+      webhookSecret: { type: String, default: '' },
+    },
+
+    razorpay: {
+      enabled: { type: Boolean, default: false },
+      environment: { type: String, enum: ['test', 'production'], default: 'production' },
+      keyId: { type: String, default: '' },
+      keySecret: { type: String, default: '' },
       webhookSecret: { type: String, default: '' },
     },
 
@@ -76,6 +83,7 @@ paymentGatewayConfigSchema.statics.switchGateway = async function (
       activeGateway: gateway,
       "payu.enabled": gateway === "payu",
       "cashfree.enabled": gateway === "cashfree",
+      "razorpay.enabled": gateway === "razorpay",
       updatedBy: adminUserId,
     },
     {

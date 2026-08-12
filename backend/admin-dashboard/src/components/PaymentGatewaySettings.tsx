@@ -18,7 +18,7 @@ api.interceptors.request.use((config) => {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type GatewayId = 'payu' | 'cashfree';
+type GatewayId = 'payu' | 'cashfree' | 'razorpay';
 
 interface PayUStatus {
   enabled: boolean;
@@ -41,10 +41,21 @@ interface CashfreeStatus {
   envSecretSet: boolean;
 }
 
+interface RazorpayStatus {
+  enabled: boolean;
+  environment: 'test' | 'production';
+  keyIdSet: boolean;
+  keySecretSet: boolean;
+  webhookSecretSet: boolean;
+  envKeyIdSet: boolean;
+  envKeySecretSet: boolean;
+}
+
 interface GatewayConfig {
   activeGateway: GatewayId;
   payu: PayUStatus;
   cashfree: CashfreeStatus;
+  razorpay: RazorpayStatus;
 }
 
 interface ApiResponse<T> {
@@ -52,7 +63,7 @@ interface ApiResponse<T> {
   message: string;
 }
 
-type TabId = 'switch' | 'cashfree' | 'payu';
+type TabId = 'switch' | 'cashfree' | 'payu' | 'razorpay';
 
 interface CfForm {
   appId: string;
@@ -69,16 +80,25 @@ interface PayuForm {
   failureUrl: string;
 }
 
+interface RzForm {
+  keyId: string;
+  keySecret: string;
+  webhookSecret: string;
+  environment: 'test' | 'production';
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const GATEWAY_LABELS: Record<GatewayId, string> = {
   payu: 'PayU',
   cashfree: 'Cashfree',
+  razorpay: 'Razorpay',
 };
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'switch', label: '🔄 Switch Gateway' },
   { id: 'cashfree', label: '💳 Cashfree Config' },
+  { id: 'razorpay', label: '⚡ Razorpay Config' },
   { id: 'payu', label: '💰 PayU Config' },
 ];
 
@@ -113,6 +133,13 @@ export default function PaymentGatewaySettings(): React.ReactElement {
     environment: 'production',
     successUrl: '',
     failureUrl: '',
+  });
+
+  const [rzForm, setRzForm] = useState<RzForm>({
+    keyId: '',
+    keySecret: '',
+    webhookSecret: '',
+    environment: 'production',
   });
 
   // ── Load config ─────────────────────────────────────────────────────────────
@@ -229,6 +256,35 @@ export default function PaymentGatewaySettings(): React.ReactElement {
           ? err.response?.data?.message
           : undefined;
       setError(msg ?? 'Failed to save Cashfree config');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveRazorpay = async (
+    e: React.FormEvent<HTMLFormElement>
+  ): Promise<void> => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+    setSuccessMsg('');
+    try {
+      const payload: Partial<RzForm> = { environment: rzForm.environment };
+      if (rzForm.keyId.trim()) payload.keyId = rzForm.keyId.trim();
+      if (rzForm.keySecret.trim()) payload.keySecret = rzForm.keySecret.trim();
+      if (rzForm.webhookSecret.trim())
+        payload.webhookSecret = rzForm.webhookSecret.trim();
+
+      const { data } = await api.put<ApiResponse<GatewayConfig>>(
+        '/admin/payment-gateway/razorpay',
+        payload
+      );
+      setSuccessMsg(data.message);
+      setRzForm((prev) => ({ ...prev, keySecret: '', webhookSecret: '' }));
+      await loadConfig();
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err) ? err.response?.data?.message : undefined;
+      setError(msg ?? 'Failed to save Razorpay config');
     } finally {
       setSaving(false);
     }
@@ -429,6 +485,31 @@ export default function PaymentGatewaySettings(): React.ReactElement {
                     : ''
                 }
               />
+
+              <GatewayCard
+                id="razorpay"
+                label="Razorpay"
+                description="UPI, cards, wallets, and netbanking with Razorpay Checkout."
+                icon="⚡"
+                isActive={active === 'razorpay'}
+                credentialStatus={{
+                  'Key ID':
+                    (config.razorpay?.keyIdSet ?? false) ||
+                    (config.razorpay?.envKeyIdSet ?? false),
+                  'Key Secret':
+                    (config.razorpay?.keySecretSet ?? false) ||
+                    (config.razorpay?.envKeySecretSet ?? false),
+                  'Webhook Secret': config.razorpay?.webhookSecretSet ?? false,
+                }}
+                environment={config.razorpay?.environment}
+                onSelect={() => requestSwitch('razorpay')}
+                loading={switching}
+                warning={
+                  !config.razorpay?.keyIdSet && !config.razorpay?.envKeyIdSet
+                    ? 'Configure credentials before switching'
+                    : ''
+                }
+              />
             </div>
 
             <div style={styles.infoBox}>
@@ -602,6 +683,139 @@ export default function PaymentGatewaySettings(): React.ReactElement {
         )}
 
         {/* ════════════════════════════════════════════════════════════════════
+            TAB: RAZORPAY CONFIG
+        ════════════════════════════════════════════════════════════════════ */}
+        {activeTab === 'razorpay' && (
+          <div style={styles.tabContent}>
+            <p style={styles.sectionNote}>
+              Enter your Razorpay credentials. Runtime credentials come from{' '}
+              <code style={styles.code}>.env</code> — DB values are metadata only.
+            </p>
+
+            <form onSubmit={(e) => void handleSaveRazorpay(e)} noValidate>
+              <FormRow label="Environment" required>
+                <select
+                  style={styles.select}
+                  value={rzForm.environment}
+                  onChange={(e) =>
+                    setRzForm({
+                      ...rzForm,
+                      environment: e.target.value as 'test' | 'production',
+                    })
+                  }
+                >
+                  <option value="test">Test (Sandbox)</option>
+                  <option value="production">Production (Live)</option>
+                </select>
+              </FormRow>
+
+              <FormRow label="Key ID" hint="From Razorpay Dashboard → API Keys">
+                <input
+                  style={styles.input}
+                  placeholder={
+                    config.razorpay?.keyIdSet ? '••••••  (already set)' : 'Enter Key ID'
+                  }
+                  value={rzForm.keyId}
+                  onChange={(e) => setRzForm({ ...rzForm, keyId: e.target.value })}
+                  autoComplete="off"
+                />
+              </FormRow>
+
+              <FormRow label="Key Secret" hint="Keep this private">
+                <input
+                  style={styles.input}
+                  type="password"
+                  placeholder={
+                    config.razorpay?.keySecretSet
+                      ? '••••••  (already set)'
+                      : 'Enter Key Secret'
+                  }
+                  value={rzForm.keySecret}
+                  onChange={(e) => setRzForm({ ...rzForm, keySecret: e.target.value })}
+                  autoComplete="new-password"
+                />
+              </FormRow>
+
+              <FormRow label="Webhook Secret" hint="Used to verify Razorpay webhook signatures">
+                <input
+                  style={styles.input}
+                  type="password"
+                  placeholder={
+                    config.razorpay?.webhookSecretSet
+                      ? '••••••  (already set)'
+                      : 'Enter Webhook Secret'
+                  }
+                  value={rzForm.webhookSecret}
+                  onChange={(e) =>
+                    setRzForm({ ...rzForm, webhookSecret: e.target.value })
+                  }
+                  autoComplete="new-password"
+                />
+              </FormRow>
+
+              <div style={styles.formFooter}>
+                <StatusDot
+                  label="Key ID"
+                  isSet={
+                    (config.razorpay?.keyIdSet ?? false) ||
+                    (config.razorpay?.envKeyIdSet ?? false)
+                  }
+                />
+                <StatusDot
+                  label="Secret"
+                  isSet={
+                    (config.razorpay?.keySecretSet ?? false) ||
+                    (config.razorpay?.envKeySecretSet ?? false)
+                  }
+                />
+                <StatusDot
+                  label="Webhook"
+                  isSet={config.razorpay?.webhookSecretSet ?? false}
+                />
+                <button
+                  type="submit"
+                  style={{
+                    ...styles.btnPrimary,
+                    ...(saving ? styles.btnDisabled : {}),
+                  }}
+                  disabled={saving}
+                >
+                  {saving ? 'Saving…' : 'Save Razorpay Config'}
+                </button>
+              </div>
+            </form>
+
+            <div style={{ ...styles.infoBox, marginTop: 20 }}>
+              <strong>📋 Razorpay Setup Steps</strong>
+              <ol style={{ margin: '8px 0 0 0', paddingLeft: 20 }}>
+                <li>
+                  Sign up at{' '}
+                  <a
+                    href="https://dashboard.razorpay.com"
+                    target="_blank"
+                    rel="noreferrer"
+                    style={styles.link}
+                  >
+                    dashboard.razorpay.com
+                  </a>
+                </li>
+                <li>Go to Settings → API Keys → copy Key ID and Key Secret</li>
+                <li>
+                  Add webhook URL:{' '}
+                  <code style={styles.code}>/api/v1/payment/razorpay/webhook</code>
+                </li>
+                <li>Enable events: payment.captured, payment.failed</li>
+                <li>
+                  Set <code style={styles.code}>RAZORPAY_KEY_ID</code> and{' '}
+                  <code style={styles.code}>RAZORPAY_KEY_SECRET</code> in server{' '}
+                  <code style={styles.code}>.env</code>
+                </li>
+              </ol>
+            </div>
+          </div>
+        )}
+
+        {/* ════════════════════════════════════════════════════════════════════
             TAB: PAYU CONFIG
         ════════════════════════════════════════════════════════════════════ */}
         {activeTab === 'payu' && (
@@ -764,7 +978,7 @@ interface GatewayCardProps {
   icon: string;
   isActive: boolean;
   credentialStatus: Record<string, boolean>;
-  environment?: 'sandbox' | 'production';
+  environment?: 'sandbox' | 'production' | 'test';
   onSelect: () => void;
   loading: boolean;
   warning: string;
