@@ -209,15 +209,33 @@ export function getPaymentReference(payment: BackendPaymentPayload): string {
   return payment.paymentData.txnid || ''
 }
 
+/** Exact mirror of openCashfreeNativeRelay — same Browser.open, same URLSearchParams pattern. */
 async function openRazorpayNativeRelay(relayParams: Record<string, string>): Promise<PayUResponse> {
   const { Browser } = await import('@capacitor/browser')
+
   const relayUrl = `${base_url}/payment/razorpay/relay?${new URLSearchParams(relayParams).toString()}`
+
+  console.log('🔗 Razorpay Android relay:', {
+    relayUrl,
+    razorpay_order_id: relayParams.razorpay_order_id,
+    platform: relayParams.platform || 'web',
+  })
+
   await Browser.open({ url: relayUrl, windowName: '_self' })
-  return { status: 'success', txnId: relayParams.txnid || '', amount: relayParams.amount || '' }
+
+  return {
+    status: 'success',
+    txnId: relayParams.txnid || '',
+    amount: relayParams.amount || '',
+  }
 }
 
+/**
+ * Razorpay web checkout — mirrors submitCashfreeRelayForm.
+ * App/web never open Razorpay directly; they POST/GET our backend /payment/razorpay/relay.
+ */
 function submitRazorpayRelayForm(
-  relayParams: Record<string, string>,
+  paymentData: Record<string, string>,
   options?: { preferSameTabOnIOS?: boolean; targetWindowName?: string }
 ): PayUResponse {
   const form = document.createElement('form')
@@ -235,7 +253,7 @@ function submitRazorpayRelayForm(
     form.target = '_blank'
   }
 
-  Object.entries(relayParams).forEach(([key, value]) => {
+  Object.entries(paymentData).forEach(([key, value]) => {
     const input = document.createElement('input')
     input.type = 'hidden'
     input.name = key
@@ -247,30 +265,32 @@ function submitRazorpayRelayForm(
   form.submit()
   document.body.removeChild(form)
 
-  return { status: 'success', txnId: relayParams.txnid || '', amount: relayParams.amount || '' }
+  return {
+    status: 'success',
+    txnId: paymentData.txnid || '',
+    amount: paymentData.amount || '',
+  }
 }
 
+/** Relay accepts checkout fields — backend page opens Razorpay (same as Cashfree relay). */
 function buildRazorpayRelayParams(paymentData: Record<string, string>): Record<string, string> {
-  const required = ['txnid', 'razorpay_order_id', 'key_id', 'amount']
-  for (const key of required) {
-    if (!paymentData[key]) {
-      throw new Error(`Razorpay checkout missing ${key}`)
-    }
+  const orderId = String(paymentData.razorpay_order_id || '').trim()
+  const keyId = String(paymentData.key_id || '').trim()
+  const txnid = String(paymentData.txnid || '').trim()
+  const amount = String(paymentData.amount || '').trim()
+  if (!orderId || !keyId || !txnid || !amount) {
+    throw new Error('Razorpay checkout params missing')
   }
-  return {
-    txnid: paymentData.txnid,
-    razorpay_order_id: paymentData.razorpay_order_id,
-    key_id: paymentData.key_id,
-    amount: paymentData.amount,
-    currency: paymentData.currency || 'INR',
-    name: paymentData.name || 'Waadi Cab',
-    description: paymentData.description || 'Border Tax Pass',
-    prefill_name: paymentData.prefill_name || '',
-    prefill_email: paymentData.prefill_email || '',
-    prefill_contact: paymentData.prefill_contact || '',
-    callback_url: paymentData.callback_url || '',
-    ...(paymentData.platform ? { platform: paymentData.platform } : {}),
+  const params: Record<string, string> = {
+    razorpay_order_id: orderId,
+    key_id: keyId,
+    txnid,
+    amount,
   }
+  if (paymentData.platform) {
+    params.platform = paymentData.platform
+  }
+  return params
 }
 
 export async function initiatePaymentFromBackend(
@@ -289,11 +309,23 @@ export async function initiatePaymentFromBackend(
     if (!rzData.platform && Capacitor.isNativePlatform()) {
       rzData.platform = 'app'
     }
+
     const relayParams = buildRazorpayRelayParams(rzData)
+
+    console.log('💳 Razorpay checkout init:', {
+      platform: Capacitor.getPlatform(),
+      isNative: Capacitor.isNativePlatform(),
+      razorpay_order_id: relayParams.razorpay_order_id,
+      txnid: rzData.txnid,
+    })
+
     if (Capacitor.isNativePlatform()) {
-      return openRazorpayNativeRelay(relayParams)
+      const result = await openRazorpayNativeRelay(relayParams)
+      return { ...result, txnId: rzData.txnid || '', amount: rzData.amount || '' }
     }
-    return submitRazorpayRelayForm(relayParams, options)
+
+    const webResult = submitRazorpayRelayForm(relayParams, options)
+    return { ...webResult, txnId: rzData.txnid || '', amount: rzData.amount || '' }
   }
 
   const cfData = toStringRecord(payment.paymentData as Record<string, string | undefined>)

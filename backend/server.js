@@ -70,7 +70,8 @@ const allowedOrigins = [
   'http://127.0.0.1:3001',
   'http://127.0.0.1:3002',
 
-  'https://192.168.1.4:3000:3001'
+  'https://192.168.1.4:3000:3001',
+  'https://mdk7v2f6-3000.inc1.devtunnels.ms'
 ];
 
 

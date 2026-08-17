@@ -12,21 +12,56 @@ const { logPayment } = require('../utils/paymentLogger');
 const gatewayCredentials = require('../utils/gatewayCredentials');
 
 class RazorpayController {
+  _esc(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
   _renderRelayError(res, message) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store');
     return res.status(400).send(
-      `<!doctype html><html><head><meta charset="utf-8"><title>Payment Error</title></head>` +
-        `<body style="font-family:system-ui;padding:24px"><h2>Unable to start payment</h2><p>${message}</p></body></html>`
+      `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Payment Error</title></head>` +
+        `<body style="font-family:system-ui;padding:24px;line-height:1.5"><h2>Unable to start payment</h2>` +
+        `<p>${this._esc(message)}</p><p style="color:#6b7280;font-size:14px">Please close this window and try again from the app.</p></body></html>`
     );
   }
 
+  /**
+   * Browser relay — loads on our backend domain, then opens Razorpay hosted checkout.
+   * Same role as Cashfree /payment/cashfree/relay and PayU /payment/relay.
+   * App never opens Razorpay directly — only this backend URL.
+   */
   async renderCheckoutRelay(req, res) {
     try {
       const source = req.method === 'GET' ? req.query : (req.body || {});
-      const razorpayOrderId = source.razorpay_order_id || source.order_id;
-      const keyId = source.key_id || razorpayService.keyId;
-      const amountRaw = source.amount;
-      const txnid = source.txnid;
+      let razorpayOrderId = source.razorpay_order_id || source.order_id;
+      let keyId = source.key_id || razorpayService.keyId;
+      let amountRaw = source.amount;
+      let txnid = source.txnid;
+      let name = source.name || 'Waadi Cab';
+      let description = source.description || 'Border Tax Pass';
+      let prefillName = source.prefill_name || '';
+      let prefillEmail = source.prefill_email || '';
+      let prefillContact = source.prefill_contact || '';
+      const platform = String(source.platform || '').trim().toLowerCase();
+
+      if ((!razorpayOrderId || !amountRaw) && txnid) {
+        const booking = await Booking.findOne({ 'payment_details.transaction_id': txnid })
+          .populate('user', 'firstName lastName email phoneNumber');
+        if (booking) {
+          razorpayOrderId = razorpayOrderId || booking.payment_details?.razorpay_order_id;
+          amountRaw = amountRaw || String(Math.round(parseFloat(booking.amount) * 100));
+          if (booking.user) {
+            prefillName = prefillName || [booking.user.firstName, booking.user.lastName].filter(Boolean).join(' ');
+            prefillEmail = prefillEmail || booking.user.email || '';
+            prefillContact = prefillContact || String(booking.user.phoneNumber || '').replace(/\D/g, '').slice(-10);
+          }
+        }
+      }
 
       if (!razorpayOrderId || !keyId || !amountRaw) {
         return this._renderRelayError(res, 'Missing Razorpay checkout parameters');
@@ -37,116 +72,81 @@ class RazorpayController {
         return this._renderRelayError(res, 'Invalid payment amount');
       }
 
+      const platformQuery = platform === 'app' ? '&platform=app' : '';
       const callbackUrl =
         source.callback_url ||
-        `${razorpayService.successUrl}?txnid=${encodeURIComponent(txnid || '')}`;
-      const failureUrl = `${razorpayService.failureUrl}?txnid=${encodeURIComponent(txnid || '')}`;
+        `${razorpayService.successUrl}?txnid=${encodeURIComponent(txnid || '')}${platformQuery}`;
+      const cancelUrl = `${razorpayService.failureUrl}?txnid=${encodeURIComponent(txnid || '')}${platformQuery}`;
 
-      const options = {
-        key: keyId,
-        amount: amountPaise,
+      const fields = {
+        key_id: keyId,
+        amount: String(amountPaise),
         currency: source.currency || 'INR',
-        name: source.name || 'Waadi Cab',
-        description: source.description || 'Border Tax Pass',
         order_id: razorpayOrderId,
+        name,
+        description,
+        'prefill[name]': prefillName,
+        'prefill[email]': prefillEmail,
+        'prefill[contact]': prefillContact,
         callback_url: callbackUrl,
-        redirect: true,
-        prefill: {
-          name: source.prefill_name || '',
-          email: source.prefill_email || '',
-          contact: source.prefill_contact || '',
-        },
-        theme: { color: '#16a34a' },
+        cancel_url: cancelUrl,
       };
 
+      const checkoutUrl = 'https://api.razorpay.com/v1/checkout/embedded';
+      const csp = [
+        "default-src 'self'",
+        "form-action 'self' https://api.razorpay.com https://checkout.razorpay.com https:",
+        "script-src 'self' 'unsafe-inline'",
+        "style-src 'self' 'unsafe-inline'",
+        "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com",
+        "img-src 'self' data: https:",
+        "base-uri 'self'",
+        "object-src 'none'",
+      ].join('; ');
+
+      res.setHeader('Content-Security-Policy', csp);
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-      res.setHeader(
-        'Content-Security-Policy',
-        [
-          "default-src 'self'",
-          "script-src 'self' 'unsafe-inline' https://checkout.razorpay.com",
-          "style-src 'self' 'unsafe-inline'",
-          "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com",
-          "connect-src 'self' https://api.razorpay.com https://checkout.razorpay.com",
-          "img-src 'self' data: https:",
-        ].join('; ')
-      );
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+
+      console.log('🔗 Razorpay hosted checkout relay:', {
+        order_id: razorpayOrderId,
+        txnid,
+        platform: platform || 'web',
+        method: req.method,
+      });
+
       res.status(200).send(
         `<!doctype html>
 <html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Redirecting to Razorpay…</title>
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <style>
-    body{font-family:system-ui,-apple-system,sans-serif;padding:24px;line-height:1.5}
-    .box{max-width:560px;margin:40px auto;border:1px solid #e5e7eb;border-radius:12px;padding:24px}
-    .meta{color:#6b7280;font-size:14px;margin-top:8px}
-    .btn{background:#16a34a;border:0;color:#fff;padding:10px 16px;border-radius:8px;font-weight:600;cursor:pointer;margin-top:12px}
-  </style>
-</head>
-<body>
-  <div class="box" id="status-box">
-    <h2>Redirecting to Razorpay…</h2>
-    <p class="meta">Please wait while we securely connect to the payment gateway.</p>
-    <noscript>
-      <button type="button" class="btn" onclick="location.reload()">Continue to Razorpay</button>
-    </noscript>
-  </div>
-  <script>
-    (function () {
-      var options = ${JSON.stringify(options)};
-      var failureUrl = ${JSON.stringify(failureUrl)};
-      var attempts = 0;
-      var maxAttempts = 50;
-
-      function showError(msg) {
-        var box = document.getElementById('status-box');
-        if (box) {
-          box.innerHTML =
-            '<h2>Payment could not start</h2>' +
-            '<p class="meta">' + msg + '</p>' +
-            '<button type="button" class="btn" onclick="location.reload()">Try again</button>';
-        }
-      }
-
-      options.modal = {
-        ondismiss: function () {
-          window.location.href = failureUrl;
-        },
-      };
-
-      function launch() {
-        attempts += 1;
-        if (typeof Razorpay !== 'function') {
-          if (attempts >= maxAttempts) {
-            showError('Razorpay SDK failed to load. Check network and try again.');
-            return;
-          }
-          return setTimeout(launch, 100);
-        }
-        try {
-          var rzp = new Razorpay(options);
-          rzp.on('payment.failed', function () {
-            window.location.href = failureUrl;
-          });
-          rzp.open();
-        } catch (err) {
-          console.error('Razorpay checkout error:', err);
-          showError((err && err.message) ? err.message : 'Checkout failed to launch.');
-        }
-      }
-
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', launch);
-      } else {
-        launch();
-      }
-    })();
-  </script>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Redirecting to Razorpay…</title>
+    <style>
+      body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;padding:24px;line-height:1.5}
+      .box{max-width:560px;margin:40px auto;border:1px solid #e5e7eb;border-radius:12px;padding:24px}
+      .btn{background:#16a34a;border:0;color:#fff;padding:10px 16px;border-radius:8px;font-weight:600;cursor:pointer}
+      .meta{color:#6b7280;font-size:14px;margin-top:8px}
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <h2>Redirecting to Razorpay…</h2>
+      <p class="meta">Please wait while we securely connect to the payment gateway.</p>
+      <form id="razorpayForm" method="POST" action="${this._esc(checkoutUrl)}">
+        ${Object.entries(fields)
+          .map(([k, v]) => `<input type="hidden" name="${this._esc(k)}" value="${this._esc(v)}" />`)
+          .join('\n        ')}
+        <noscript>
+          <button type="submit" class="btn">Continue to Razorpay</button>
+        </noscript>
+      </form>
+      <p class="meta">If you are not redirected automatically, tap Continue to Razorpay.</p>
+    </div>
+    <script>document.getElementById('razorpayForm').submit();</script>
+  </body>
 </html>`
       );
     } catch (error) {
