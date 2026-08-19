@@ -31,9 +31,9 @@ class RazorpayController {
   }
 
   /**
-   * Browser relay — loads on our backend domain, then opens Razorpay hosted checkout.
-   * Same role as Cashfree /payment/cashfree/relay and PayU /payment/relay.
-   * App never opens Razorpay directly — only this backend URL.
+   * Browser relay — official Razorpay Standard Checkout popup via checkout.js.
+   * Not Embedded/Hosted Checkout (no POST to /checkout/embedded, no redirect:true).
+   * Same role as Cashfree /payment/cashfree/relay: app/web open this backend URL only.
    */
   async renderCheckoutRelay(req, res) {
     try {
@@ -49,7 +49,7 @@ class RazorpayController {
       let prefillContact = source.prefill_contact || '';
       const platform = String(source.platform || '').trim().toLowerCase();
 
-      if ((!razorpayOrderId || !amountRaw) && txnid) {
+      if (txnid) {
         const booking = await Booking.findOne({ 'payment_details.transaction_id': txnid })
           .populate('user', 'firstName lastName email phoneNumber');
         if (booking) {
@@ -73,33 +73,32 @@ class RazorpayController {
       }
 
       const platformQuery = platform === 'app' ? '&platform=app' : '';
-      const callbackUrl =
-        source.callback_url ||
-        `${razorpayService.successUrl}?txnid=${encodeURIComponent(txnid || '')}${platformQuery}`;
-      const cancelUrl = `${razorpayService.failureUrl}?txnid=${encodeURIComponent(txnid || '')}${platformQuery}`;
+      const successUrl = `${razorpayService.successUrl}?txnid=${encodeURIComponent(txnid || '')}${platformQuery}`;
+      const failureUrl = `${razorpayService.failureUrl}?txnid=${encodeURIComponent(txnid || '')}${platformQuery}`;
 
-      const fields = {
-        key_id: keyId,
-        amount: String(amountPaise),
+      const options = {
+        key: keyId,
+        amount: amountPaise,
         currency: source.currency || 'INR',
-        order_id: razorpayOrderId,
         name,
         description,
-        'prefill[name]': prefillName,
-        'prefill[email]': prefillEmail,
-        'prefill[contact]': prefillContact,
-        callback_url: callbackUrl,
-        cancel_url: cancelUrl,
+        order_id: razorpayOrderId,
+        prefill: {
+          name: prefillName,
+          email: prefillEmail,
+          contact: prefillContact,
+        },
+        theme: { color: '#16a34a' },
       };
 
-      const checkoutUrl = 'https://api.razorpay.com/v1/checkout/embedded';
       const csp = [
         "default-src 'self'",
-        "form-action 'self' https://api.razorpay.com https://checkout.razorpay.com https:",
-        "script-src 'self' 'unsafe-inline'",
-        "style-src 'self' 'unsafe-inline'",
-        "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com",
+        "script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://cdn.razorpay.com",
+        "style-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://cdn.razorpay.com",
+        "frame-src https://api.razorpay.com https://checkout.razorpay.com https://cdn.razorpay.com",
+        "connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com https://checkout.razorpay.com",
         "img-src 'self' data: https:",
+        "font-src 'self' data: https:",
         "base-uri 'self'",
         "object-src 'none'",
       ].join('; ');
@@ -110,7 +109,7 @@ class RazorpayController {
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
 
-      console.log('🔗 Razorpay hosted checkout relay:', {
+      console.log('🔗 Razorpay Standard Checkout popup relay:', {
         order_id: razorpayOrderId,
         txnid,
         platform: platform || 'web',
@@ -123,29 +122,86 @@ class RazorpayController {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Redirecting to Razorpay…</title>
+    <title>Pay with Razorpay</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <style>
       body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;padding:24px;line-height:1.5}
       .box{max-width:560px;margin:40px auto;border:1px solid #e5e7eb;border-radius:12px;padding:24px}
-      .btn{background:#16a34a;border:0;color:#fff;padding:10px 16px;border-radius:8px;font-weight:600;cursor:pointer}
+      .btn{background:#16a34a;border:0;color:#fff;padding:10px 16px;border-radius:8px;font-weight:600;cursor:pointer;margin-top:12px}
       .meta{color:#6b7280;font-size:14px;margin-top:8px}
     </style>
   </head>
   <body>
-    <div class="box">
-      <h2>Redirecting to Razorpay…</h2>
-      <p class="meta">Please wait while we securely connect to the payment gateway.</p>
-      <form id="razorpayForm" method="POST" action="${this._esc(checkoutUrl)}">
-        ${Object.entries(fields)
-          .map(([k, v]) => `<input type="hidden" name="${this._esc(k)}" value="${this._esc(v)}" />`)
-          .join('\n        ')}
-        <noscript>
-          <button type="submit" class="btn">Continue to Razorpay</button>
-        </noscript>
-      </form>
-      <p class="meta">If you are not redirected automatically, tap Continue to Razorpay.</p>
+    <div class="box" id="status-box">
+      <h2>Opening Razorpay…</h2>
+      <p class="meta">The official Razorpay payment popup will open. Complete payment in the popup.</p>
+      <button type="button" class="btn" id="pay-btn">Pay Now</button>
     </div>
-    <script>document.getElementById('razorpayForm').submit();</script>
+    <script>
+      (function () {
+        var options = ${JSON.stringify(options)};
+        var successUrl = ${JSON.stringify(successUrl)};
+        var failureUrl = ${JSON.stringify(failureUrl)};
+        var attempts = 0;
+        var rzp = null;
+
+        function showError(msg) {
+          var box = document.getElementById('status-box');
+          if (box) {
+            box.innerHTML =
+              '<h2>Payment could not start</h2>' +
+              '<p class="meta">' + msg + '</p>' +
+              '<button type="button" class="btn" onclick="location.reload()">Try again</button>';
+          }
+        }
+
+        function openCheckout() {
+          if (!rzp) return;
+          rzp.open();
+        }
+
+        function launch() {
+          attempts += 1;
+          if (typeof Razorpay !== 'function') {
+            if (attempts > 50) {
+              showError('Razorpay Checkout failed to load. Check network and try again.');
+              return;
+            }
+            return setTimeout(launch, 100);
+          }
+          try {
+            options.handler = function (response) {
+              var url = successUrl
+                + '&razorpay_payment_id=' + encodeURIComponent(response.razorpay_payment_id || '')
+                + '&razorpay_order_id=' + encodeURIComponent(response.razorpay_order_id || '')
+                + '&razorpay_signature=' + encodeURIComponent(response.razorpay_signature || '');
+              window.location.replace(url);
+            };
+            options.modal = {
+              ondismiss: function () {
+                window.location.href = failureUrl;
+              }
+            };
+            rzp = new Razorpay(options);
+            rzp.on('payment.failed', function () {
+              window.location.href = failureUrl;
+            });
+            var btn = document.getElementById('pay-btn');
+            if (btn) btn.addEventListener('click', openCheckout);
+            openCheckout();
+          } catch (err) {
+            console.error('Razorpay checkout error:', err);
+            showError(err && err.message ? err.message : 'Checkout failed to launch.');
+          }
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', launch);
+        } else {
+          launch();
+        }
+      })();
+    </script>
   </body>
 </html>`
       );
