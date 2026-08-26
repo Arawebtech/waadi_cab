@@ -8,6 +8,7 @@
     "dev": "nodemon server.js",
     "seed": "node scripts/seed.js",
     "seed:plans": "node scripts/seed-plans.js",
+    "seed:delete-old-booking": "node scripts/backup-delete-old-bookings.js",
     "cleanup": "node scripts/cleanup-db.js",
     "reset:whatsapp": "node reset-whatsapp.js",
     "deploy:production": "./deploy.sh production",

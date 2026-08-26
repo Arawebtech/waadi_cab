@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { Capacitor } from '@capacitor/core'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2, CreditCard, Shield, AlertCircle } from 'lucide-react'
@@ -17,6 +18,15 @@ import {
   isBackendPaymentPayload,
   verifyPaymentWithBackend,
 } from '@/lib/payment-gateway'
+import { verifyRazorpayPayment } from '@/lib/razorpay'
+import { openRazorpayCheckout } from '@/lib/razorpay-checkout'
+import {
+  savePendingPayment,
+  getPendingPayment,
+  clearPendingPayment,
+  isPaidBackendResult,
+  buildPaymentPageUrl,
+} from '@/lib/pending-payment'
 import appLogger, { setCorrelationIds } from '@/lib/logger'
 import journeyLogger from '@/lib/journeyLogger'
 
@@ -59,6 +69,7 @@ export function PaymentIntegration({
   const [paymentStep, setPaymentStep] = useState<'ready' | 'processing' | 'redirecting'>('ready')
   const [activeGateway, setActiveGateway] = useState<PaymentGatewayName | null>(null)
   const { toast } = useToast()
+  const router = useRouter()
   const pollingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollingAttemptsRef = useRef<number>(0)
 
@@ -118,7 +129,7 @@ export function PaymentIntegration({
         throw new Error('Payment gateway response missing from server')
       }
 
-      const gateway = paymentPayload.gateway
+      const gateway = paymentPayload.gateway as PaymentGatewayName
       setActiveGateway(gateway)
 
       const paymentReference = getPaymentReference(paymentPayload)
@@ -143,6 +154,21 @@ export function PaymentIntegration({
         title: "Initializing Payment",
         description: "Redirecting to payment gateway...",
       })
+
+      // Remember the Razorpay txn before checkout so a later app reopen can
+      // detect a webhook-confirmed success. This is not a paid/processing state.
+      if (gateway === 'razorpay') {
+        savePendingPayment({
+          txnId: paymentReference,
+          orderId: paymentReference,
+          gateway,
+          amount,
+          bookingId: booking._id,
+          bookingNumber: booking.bookingId,
+          bookingData: { vehicleNumber: bookingData.vehicleNumber },
+          timestamp: Date.now(),
+        })
+      }
 
       const response = await initiatePaymentFromBackend(paymentPayload, {
         preferSameTabOnIOS: true,

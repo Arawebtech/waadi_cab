@@ -17,6 +17,7 @@ const systemLogSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-systemLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 90 }); // 90-day TTL
+// systemLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 90 }); // 90-day TTL
+systemLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 8 }); // 90-day TTL
 
 module.exports = mongoose.model('SystemLog', systemLogSchema);

@@ -27,7 +27,8 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 100 * 1024 * 1024 // 100MB limit
+    fileSize: 100 * 1024 * 1024, // 100MB ZIP
+    fieldSize: 2 * 1024 * 1024,
   },
   fileFilter: (req, file, cb) => {
     if (file.mimetype === 'application/zip' || file.originalname.endsWith('.zip')) {
@@ -369,7 +370,30 @@ class AppVersionController {
 const controller = new AppVersionController();
 
 // Export the upload middleware
-controller.uploadAppVersionMiddleware = upload.single('buildFile');
+controller.uploadAppVersionMiddleware = (req, res, next) => {
+  upload.single('buildFile')(req, res, (err) => {
+    if (!err) return next();
+
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({
+        success: false,
+        message: 'ZIP file must be 100MB or less',
+      });
+    }
+
+    if (err.name === 'MulterError') {
+      return res.status(400).json({
+        success: false,
+        message: err.message || 'File upload failed',
+      });
+    }
+
+    return res.status(400).json({
+      success: false,
+      message: err.message || 'Invalid upload',
+    });
+  });
+};
 
 module.exports = controller;
 

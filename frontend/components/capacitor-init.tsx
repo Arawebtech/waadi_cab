@@ -1,10 +1,13 @@
 'use client';
 
 import { useEffect, useCallback } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { App } from '@capacitor/app';
 import { initializeCapacitor, registerPaymentDeepLinks } from '@/lib/capacitor';
 import { pushNotificationService } from '@/lib/push-notifications';
 import { useRouter } from 'next/navigation';
 import appLogger, { setCorrelationIds } from '@/lib/logger';
+import { reconcilePendingRazorpay } from '@/lib/pending-payment';
 
 function buildPaymentRoute(path: string, params: URLSearchParams): string {
   const txnid = params.get('txnid') || params.get('txnId') || params.get('orderId') || '';
@@ -80,12 +83,31 @@ export default function CapacitorInit() {
 
     registerPaymentDeepLinks(navigateFromPaymentLink);
 
+    const recoverPaidRazorpay = () => {
+      void reconcilePendingRazorpay((url) => router.replace(url))
+    }
+
+    recoverPaidRazorpay()
+
+    let appStateHandle: { remove: () => Promise<void> } | undefined
+    if (Capacitor.isNativePlatform()) {
+      App.addListener('appStateChange', ({ isActive }) => {
+        if (isActive) recoverPaidRazorpay()
+      }).then((handle) => {
+        appStateHandle = handle
+      })
+    }
+
     appLogger.mobile('App launch — Capacitor initialized', {
       sourceFile: 'capacitor-init.tsx',
       sourceFunction: 'useEffect',
     });
     console.log('🔌 Capacitor initialized with payment deep link handling');
-  }, [navigateFromPaymentLink]);
+
+    return () => {
+      appStateHandle?.remove()
+    }
+  }, [navigateFromPaymentLink, router]);
 
   return null;
 }

@@ -124,18 +124,28 @@ export default function AppVersionsPage() {
 
       const response = await fetch(url, {
         method,
-        body: formDataToSend
+        body: formDataToSend,
       });
 
+      if (response.status === 413) {
+        alert(
+          'Upload rejected (413). ZIP must be 100MB or less. If the file is under 100MB, production Nginx needs client_max_body_size 128m.'
+        );
+        return;
+      }
+
+      const contentType = response.headers.get('content-type') || '';
       if (response.ok) {
         alert(editingVersion ? 'Version updated successfully' : 'Version created successfully');
         setShowCreateModal(false);
         setEditingVersion(null);
         resetForm();
         loadVersions();
-      } else {
+      } else if (contentType.includes('application/json')) {
         const error = await response.json();
         alert(error.message || 'Failed to save version');
+      } else {
+        alert(`Failed to save version (HTTP ${response.status})`);
       }
     } catch (error) {
       console.error('Error saving version:', error);

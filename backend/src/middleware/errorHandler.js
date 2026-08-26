@@ -54,6 +54,23 @@ const errorHandler = (err, req, res, next) => {
     error = { message, statusCode: 401 };
   }
 
+  // Multer / payload too large (should be rare — Nginx usually returns 413 first)
+  if (err.code === 'LIMIT_FILE_SIZE' || err.type === 'entity.too.large' || err.status === 413) {
+    return res.status(413).json({
+      success: false,
+      message: 'Upload too large. ZIP must be 100MB or less.',
+      requestId: req.requestId,
+    });
+  }
+
+  if (err.name === 'MulterError') {
+    return res.status(400).json({
+      success: false,
+      message: err.message || 'File upload failed',
+      requestId: req.requestId,
+    });
+  }
+
   // MongoDB connection errors
   if (err.name === 'MongoError' || err.name === 'MongooseError') {
     const message = 'Database connection error';

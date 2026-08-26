@@ -35,7 +35,7 @@ export interface PayUPaymentData {
 }
 
 export interface PayUResponse {
-  status: 'success' | 'failure' | 'cancel'
+  status: 'success' | 'failure' | 'cancel' | 'pending'
   paymentId?: string
   txnId: string
   amount: string
@@ -43,7 +43,12 @@ export interface PayUResponse {
   paymentGatewayType?: string
   bankRefNumber?: string
   cardToken?: string
+  razorpay_payment_id?: string
+  razorpay_order_id?: string
+  razorpay_signature?: string
 }
+
+export type PayUResponse = PayUResponse
 
 // PayU Service Class
 export class PayUService {

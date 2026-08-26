@@ -90,6 +90,8 @@ print_status "Setting up PM2 startup script..."
 pm2 startup
 
 print_success "Deployment completed successfully!"
+print_status "If App Version ZIP uploads return HTTP 413, run on the API server:"
+print_status "  sudo bash scripts/apply-nginx-upload-limit.sh"
 print_status "Application is now running with PM2"
 print_status "Use 'pm2 status' to check application status"
 print_status "Use 'pm2 logs wadi-cab-backend' to view logs"

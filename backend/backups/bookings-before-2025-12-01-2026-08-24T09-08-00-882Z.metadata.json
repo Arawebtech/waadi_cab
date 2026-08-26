@@ -1,0 +1,15 @@
+{
+  "createdAt": "2026-08-24T09:08:09.159Z",
+  "cutoffDate": "2025-12-01T00:00:00.000Z",
+  "filter": {
+    "createdAt": {
+      "$lt": "2025-12-01T00:00:00.000Z"
+    }
+  },
+  "collection": "bookings",
+  "model": "Booking",
+  "recordCount": 34365,
+  "backupFile": "bookings-before-2025-12-01-2026-08-24T09-08-00-882Z.jsonl",
+  "backupSizeBytes": 26896140,
+  "sha256": "bde8e5a14f5b37ecc90784cf500333497f16880f2b0abd799a86648bd5ec715a"
+}

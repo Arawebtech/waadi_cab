@@ -24,7 +24,7 @@ const BASE_URL = process.env.REACT_APP_API_URL || 'https://api.waadi.in/api/v1';
 // Create axios instance
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 30000, // Increased timeout to 30 seconds
+  timeout: 120000, // Increased timeout to 60 seconds
   headers: {
     'Content-Type': 'application/json',
   },

@@ -20,7 +20,14 @@ export interface RazorpayPaymentData {
   platform?: string
 }
 
-export async function verifyRazorpayPayment(txnId: string): Promise<any> {
+export async function verifyRazorpayPayment(
+  txnId: string,
+  checkout?: {
+    razorpay_order_id?: string
+    razorpay_payment_id?: string
+    razorpay_signature?: string
+  }
+): Promise<any> {
   const accessToken = tokenManager.getAccessToken()
   if (!accessToken) throw new Error('Authentication required. Please login again.')
 
@@ -30,7 +37,12 @@ export async function verifyRazorpayPayment(txnId: string): Promise<any> {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${accessToken}`,
     },
-    body: JSON.stringify({ txnId }),
+    body: JSON.stringify({
+      txnId,
+      razorpay_order_id: checkout?.razorpay_order_id,
+      razorpay_payment_id: checkout?.razorpay_payment_id,
+      razorpay_signature: checkout?.razorpay_signature,
+    }),
   })
 
   return response.json()

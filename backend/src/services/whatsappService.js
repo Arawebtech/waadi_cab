@@ -1,6 +1,27 @@
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const path = require('path');
+const fs = require('fs');
+
+function resolveChromeExecutable() {
+  const fromEnv = process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROME_PATH;
+  if (fromEnv && fs.existsSync(fromEnv)) return fromEnv;
+
+  const candidates = [
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+    path.join(process.env.LOCALAPPDATA || '', 'Google\\Chrome\\Application\\chrome.exe'),
+    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/google-chrome',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/chromium',
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  ];
+
+  return candidates.find((candidate) => candidate && fs.existsSync(candidate)) || null;
+}
 
 class WhatsAppService {
   constructor() {
@@ -14,8 +35,20 @@ class WhatsAppService {
 
   async initialize() {
     try {
+      if (process.env.WHATSAPP_ENABLED === 'false') {
+        console.log('ℹ️ WhatsApp service disabled (WHATSAPP_ENABLED=false)');
+        return false;
+      }
+
       console.log('🔄 Initializing WhatsApp Web client...');
-      
+
+      const executablePath = resolveChromeExecutable();
+      if (executablePath) {
+        console.log('🌐 WhatsApp using browser:', executablePath);
+      } else {
+        console.warn('⚠️ No local Chrome/Edge found — WhatsApp Web may fail until Chrome is installed');
+      }
+
       // Create client with LocalAuth for session persistence
       this.client = new Client({
         authStrategy: new LocalAuth({
@@ -24,6 +57,7 @@ class WhatsAppService {
         }),
         puppeteer: {
           headless: true,
+          ...(executablePath ? { executablePath } : {}),
           args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
