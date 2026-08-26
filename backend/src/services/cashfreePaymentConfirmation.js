@@ -140,6 +140,10 @@ async function confirmSuccess({
       await applyTracking(booking, orderId, { verification, webhookPayment, webhookOrder });
       await booking.save();
     }
+    emitPaymentVerified(booking, {
+      gateway: 'cashfree',
+      source,
+    });
     return { ok: true, alreadyPaid: true, booking };
   }
 
@@ -155,7 +159,12 @@ async function confirmSuccess({
 
     if (locked.status === 'paid') {
       await session.abortTransaction();
-      return { ok: true, alreadyPaid: true, booking: locked };
+      const paidBooking = await findBookingByOrderId(orderId);
+      emitPaymentVerified(paidBooking || locked, {
+        gateway: 'cashfree',
+        source,
+      });
+      return { ok: true, alreadyPaid: true, booking: paidBooking || locked };
     }
 
     locked.status = 'paid';

@@ -1,9 +1,30 @@
 /**
  * Centralized Socket.IO emit helpers for admin + mobile clients.
  */
+function toPlain(value) {
+  if (value == null) return value;
+  const obj = typeof value.toJSON === 'function' ? value.toJSON() : value;
+  try {
+    return JSON.parse(JSON.stringify(obj));
+  } catch {
+    return obj;
+  }
+}
+
 function emitToRoom(room, event, payload) {
-  if (!global.io || !room) return;
-  global.io.to(room).emit(event, payload);
+  if (!global.io || !room) {
+    console.warn('📡 Socket emit skipped — io not ready', { room, event });
+    return;
+  }
+  const plainPayload =
+    payload && typeof payload === 'object' && payload.booking
+      ? { ...payload, booking: toPlain(payload.booking) }
+      : payload;
+  try {
+    global.io.to(room).emit(event, plainPayload);
+  } catch (err) {
+    console.warn('📡 Socket emit failed', { room, event, error: err.message });
+  }
 }
 
 function getUserId(booking) {
