@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { App as CapApp } from '@capacitor/app';
 import { versionTrackingAPI } from '@/lib/api';
 
 interface VersionTrackerProps {
@@ -12,15 +14,27 @@ export const VersionTracker: React.FC<VersionTrackerProps> = ({ userId, platform
   useEffect(() => {
     const trackVersion = async () => {
       try {
-        // Get version from package.json (this would be set during build)
-        const appVersion = process.env.NEXT_PUBLIC_APP_VERSION || '0.1.2';
+        let appVersion = process.env.NEXT_PUBLIC_APP_VERSION || '0.1.2';
+        let detectedPlatform = platform;
+
+        if (Capacitor.isNativePlatform()) {
+          try {
+            const info = await CapApp.getInfo();
+            if (info && info.version && info.version !== '0.0.0') {
+              appVersion = info.version;
+            }
+            detectedPlatform = Capacitor.getPlatform() as 'android' | 'ios';
+          } catch (e) {
+            console.warn('⚠️ Could not read native app version in tracker:', e);
+          }
+        }
         
-        console.log('📱 Tracking app version:', { userId, appVersion, platform });
+        console.log('📱 Tracking app version:', { userId, appVersion, platform: detectedPlatform });
         
         const result = await versionTrackingAPI.trackVersion({
           userId,
           appVersion,
-          platform
+          platform: detectedPlatform
         });
         
         if (result.success) {

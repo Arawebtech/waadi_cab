@@ -227,12 +227,21 @@ async function openRazorpayInAppCheckout(paymentData: RazorpayPaymentData): Prom
     }
   }
 
-  // Dismiss, UPI app-switch, or checkout error is not a confirmed failure.
+  if (outcome.status === 'dismissed') {
+    return {
+      status: 'cancel',
+      txnId,
+      amount,
+      error: outcome.reason || 'checkout_closed',
+      paymentGatewayType: 'razorpay',
+    }
+  }
+
   return {
-    status: 'pending',
+    status: 'failure',
     txnId,
     amount,
-    error: outcome.reason,
+    error: outcome.reason || 'payment_failed',
     paymentGatewayType: 'razorpay',
   }
 }

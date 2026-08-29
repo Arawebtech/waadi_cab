@@ -1242,9 +1242,11 @@ export const appSettingsAPI = {
 export interface UpdateCheckResponse {
   success: boolean
   data: {
+    hasUpdate?: boolean
     updateRequired: boolean
     latestVersion: string | null
     downloadUrl: string | null
+    playStoreUrl?: string | null
     releaseNotes: string
     isForced: boolean
     minSupportedVersion: string
@@ -1253,7 +1255,10 @@ export interface UpdateCheckResponse {
 
 export const versionAPI = {
   async checkForUpdate(currentVersion: string, platform: string = 'both'): Promise<UpdateCheckResponse | ApiError> {
-    const result = await apiRequest<UpdateCheckResponse>(`/check?currentVersion=${currentVersion}&platform=${platform}`, { method: 'GET' })
+    const result = await apiRequest<UpdateCheckResponse>(
+      `/check?currentVersion=${encodeURIComponent(currentVersion)}&platform=${encodeURIComponent(platform)}`,
+      { method: 'GET' }
+    )
     return result
   }
 }

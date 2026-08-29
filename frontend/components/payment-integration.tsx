@@ -182,6 +182,81 @@ export function PaymentIntegration({
         data: { gateway, status: response.status },
       })
 
+      if (gateway === 'razorpay') {
+        if (response.status === 'success') {
+          setPaymentStep('processing')
+          toast({
+            title: "Verifying Payment",
+            description: "Confirming your payment details...",
+          })
+
+          try {
+            const verifyResult = await verifyRazorpayPayment(paymentReference, {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            })
+
+            const isSuccess =
+              verifyResult.success &&
+              (verifyResult.data?.status === 'success' || verifyResult.data?.bookingStatus === 'paid')
+
+            if (isSuccess) {
+              setIsProcessing(false)
+              setPaymentStep('ready')
+              stopPolling()
+              localStorage.removeItem('pendingPayment')
+              clearPendingPayment()
+
+              toast({
+                title: "Payment Successful",
+                description: "Your border tax pass has been booked successfully!",
+              })
+
+              onPaymentSuccess({
+                status: 'success',
+                txnId: paymentReference,
+                amount: amount.toString(),
+                paymentId: response.razorpay_payment_id || verifyResult.data?.paymentId,
+                paymentGatewayType: 'razorpay',
+                bankRefNumber: verifyResult.data?.bankRefNumber,
+              })
+              return
+            }
+          } catch (verifyErr) {
+            console.warn('Direct Razorpay verification returned error, starting status polling:', verifyErr)
+          }
+
+          // If direct verification was still pending or encountered a network glitch, start polling
+          localStorage.setItem('pendingPayment', JSON.stringify({
+            txnId: paymentReference,
+            orderId: paymentReference,
+            gateway,
+            amount,
+            bookingData,
+            bookingId: booking._id,
+            timestamp: Date.now(),
+          }))
+          startPolling(gateway, paymentReference)
+          return
+        }
+
+        if (response.status === 'cancel') {
+          // User closed / dismissed the modal
+          setIsProcessing(false)
+          setPaymentStep('ready')
+          clearPendingPayment()
+          toast({
+            title: "Payment Cancelled",
+            description: "Payment window was closed. You can tap Pay to try again.",
+          })
+          return
+        }
+
+        // Razorpay failed
+        throw new Error(response.error || 'Payment could not be completed')
+      }
+
       if (response.status === 'success') {
         localStorage.setItem('pendingPayment', JSON.stringify({
           txnId: paymentReference,

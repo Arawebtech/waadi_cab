@@ -57,11 +57,13 @@ class AppVersionController {
       res.status(200).json({
         success: true,
         data: {
-          updateRequired: updateInfo.updateRequired,
+          hasUpdate: Boolean(updateInfo.hasUpdate),
+          updateRequired: Boolean(updateInfo.updateRequired),
           latestVersion: updateInfo.latestVersion?.version || null,
           downloadUrl: updateInfo.latestVersion?.downloadUrl || null,
+          playStoreUrl: updateInfo.latestVersion?.playStoreUrl || 'https://play.google.com/store/apps/details?id=com.MP.Waadi_App',
           releaseNotes: updateInfo.latestVersion?.releaseNotes || '',
-          isForced: updateInfo.isForced || false,
+          isForced: Boolean(updateInfo.isForced),
           minSupportedVersion: updateInfo.minSupportedVersion || '0.1.0'
         }
       });
@@ -127,7 +129,8 @@ class AppVersionController {
         isActive,
         isForced,
         minSupportedVersion,
-        platform
+        platform,
+        playStoreUrl
       } = req.body;
 
       // Validate required fields
@@ -169,6 +172,7 @@ class AppVersionController {
       const newVersion = new AppVersion({
         version,
         downloadUrl,
+        playStoreUrl: playStoreUrl || 'https://play.google.com/store/apps/details?id=com.MP.Waadi_App',
         releaseNotes: releaseNotes || '',
         isActive: isActive === 'true' || isActive === true,
         isForced: isForced === 'true' || isForced === true,
@@ -204,7 +208,8 @@ class AppVersionController {
         isActive,
         isForced,
         minSupportedVersion,
-        platform
+        platform,
+        playStoreUrl
       } = req.body;
 
       const existingVersion = await AppVersion.findById(id);
@@ -216,11 +221,12 @@ class AppVersionController {
       }
 
       let updates = {
-        releaseNotes: releaseNotes || existingVersion.releaseNotes,
-        isActive: isActive === 'true' || isActive === true,
-        isForced: isForced === 'true' || isForced === true,
+        releaseNotes: releaseNotes !== undefined ? releaseNotes : existingVersion.releaseNotes,
+        isActive: isActive !== undefined ? (isActive === 'true' || isActive === true) : existingVersion.isActive,
+        isForced: isForced !== undefined ? (isForced === 'true' || isForced === true) : existingVersion.isForced,
         minSupportedVersion: minSupportedVersion || existingVersion.minSupportedVersion,
         platform: platform || existingVersion.platform,
+        playStoreUrl: playStoreUrl || existingVersion.playStoreUrl || 'https://play.google.com/store/apps/details?id=com.MP.Waadi_App',
         updatedAt: new Date()
       };
 

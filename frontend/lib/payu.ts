@@ -48,8 +48,6 @@ export interface PayUResponse {
   razorpay_signature?: string
 }
 
-export type PayUResponse = PayUResponse
-
 // PayU Service Class
 export class PayUService {
   private config: PayUConfig

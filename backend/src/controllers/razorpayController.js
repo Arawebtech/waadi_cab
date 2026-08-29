@@ -371,13 +371,34 @@ class RazorpayController {
   async verifyPayment(req, res) {
     try {
       const txnId = req.body.txnId || req.body.orderId;
+      const razorpayOrderId = req.body.razorpay_order_id || req.body.razorpayOrderId;
+      const razorpayPaymentId = req.body.razorpay_payment_id || req.body.razorpayPaymentId;
+      const razorpaySignature = req.body.razorpay_signature || req.body.razorpaySignature;
       const userId = req.user._id;
-      if (!txnId) return res.status(400).json({ success: false, message: 'txnId is required' });
+      if (!txnId && !razorpayOrderId) return res.status(400).json({ success: false, message: 'txnId or razorpay_order_id is required' });
 
-      const result = await razorpayPaymentConfirmation.verifyAndConfirm(txnId, 'api-verify', { useRetry: true });
+      let result;
+      if (razorpayOrderId && razorpayPaymentId && razorpaySignature) {
+        result = await razorpayPaymentConfirmation.confirmFromPaymentCallback({
+          txnId,
+          razorpayOrderId,
+          razorpayPaymentId,
+          razorpaySignature,
+          source: 'api-verify',
+        });
+      } else {
+        result = await razorpayPaymentConfirmation.verifyAndConfirm(txnId, 'api-verify', { useRetry: true });
+      }
+
       const booking =
         result.booking ||
-        (await Booking.findOne({ 'payment_details.transaction_id': txnId, user: userId })
+        (await Booking.findOne({
+          $or: [
+            { 'payment_details.transaction_id': txnId },
+            { 'payment_details.razorpay_order_id': razorpayOrderId },
+          ],
+          user: userId,
+        })
           .populate('visiting_state', 'name')
           .populate('user', 'firstName lastName phoneNumber email'));
 
@@ -392,15 +413,16 @@ class RazorpayController {
       return res.status(200).json({
         success: apiStatus !== 'failure',
         data: {
-          txnId,
+          txnId: booking.payment_details?.transaction_id || txnId,
           status: apiStatus,
-          paymentId: result.verification?.paymentId,
+          paymentId: result.verification?.paymentId || razorpayPaymentId,
           amount: booking.amount,
           bookingId: booking.bookingId,
           bookingStatus: booking.status,
         },
       });
     } catch (error) {
+      console.error('❌ Razorpay verifyPayment error:', error);
       return res.status(500).json({ success: false, message: 'Verification failed' });
     }
   }

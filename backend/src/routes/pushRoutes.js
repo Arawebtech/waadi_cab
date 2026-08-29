@@ -156,44 +156,246 @@ function chunkArray(array, chunkSize) {
 }
 
 // Send push notification to all users with batching
+// router.post('/send-to-all', async (req, res) => {
+//   try {
+//     const { title, body, data = {} } = req.body;
+
+//     if (!title || !body) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'title and body are required'
+//       });
+//     }
+
+//     // Collect tokens from DB
+//     const dbUsers = await User.find({ fcmToken: { $ne: null } }).select('fcmToken');
+//     const tokens = dbUsers.map(u => u.fcmToken).filter(Boolean);
+
+//     if (tokens.length === 0) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'No FCM tokens found'
+//       });
+//     }
+
+//     const message = {
+//       notification: {
+//         title,
+//         body,
+//       },
+//       data: {
+//         ...data,
+//         click_action: 'FLUTTER_NOTIFICATION_CLICK',
+//       },
+//       android: {
+//         notification: {
+//           channelId: 'wadi-cab-notifications',
+//           priority: 'high',
+//           defaultSound: true,
+//         },
+//       },
+//       apns: {
+//         payload: {
+//           aps: {
+//             sound: 'default',
+//             badge: 1,
+//           },
+//         },
+//       },
+//     };
+
+//     // Firebase has a limit of 500 tokens per multicast request
+//     const MAX_TOKENS_PER_BATCH = 500;
+//     const tokenChunks = chunkArray(tokens, MAX_TOKENS_PER_BATCH);
+    
+//     console.log(`📊 Sending notification to ${tokens.length} tokens in ${tokenChunks.length} batches`);
+
+//     let totalSuccessCount = 0;
+//     let totalFailureCount = 0;
+//     const batchResults = [];
+
+//     // Send notifications in batches
+//     for (let i = 0; i < tokenChunks.length; i++) {
+//       const chunk = tokenChunks[i];
+//       console.log(`📤 Sending batch ${i + 1}/${tokenChunks.length} (${chunk.length} tokens)`);
+      
+//       try {
+//         const response = await admin.messaging().sendEachForMulticast({
+//           tokens: chunk,
+//           ...message,
+//         });
+
+//         totalSuccessCount += response.successCount;
+//         totalFailureCount += response.failureCount;
+        
+//         batchResults.push({
+//           batch: i + 1,
+//           tokensInBatch: chunk.length,
+//           successCount: response.successCount,
+//           failureCount: response.failureCount,
+//         });
+
+//         console.log(`✅ Batch ${i + 1} completed: ${response.successCount} success, ${response.failureCount} failures`);
+        
+//         // Add small delay between batches to avoid rate limiting
+//         if (i < tokenChunks.length - 1) {
+//           await new Promise(resolve => setTimeout(resolve, 100));
+//         }
+//       } catch (batchError) {
+//         console.error(`❌ Error in batch ${i + 1}:`, batchError.message);
+//         totalFailureCount += chunk.length;
+        
+//         batchResults.push({
+//           batch: i + 1,
+//           tokensInBatch: chunk.length,
+//           successCount: 0,
+//           failureCount: chunk.length,
+//           error: batchError.message,
+//         });
+//       }
+//     }
+
+//     console.log('✅ All batches completed:', {
+//       totalSuccessCount,
+//       totalFailureCount,
+//       totalTokens: tokens.length,
+//       batchesSent: tokenChunks.length,
+//     });
+
+//     res.json({
+//       success: true,
+//       message: 'Multicast push notification sent in batches',
+//       successCount: totalSuccessCount,
+//       failureCount: totalFailureCount,
+//       totalTokens: tokens.length,
+//       batchesSent: tokenChunks.length,
+//       batchResults,
+//     });
+//   } catch (error) {
+//     console.error('❌ Error sending multicast push notification:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Failed to send multicast push notification',
+//       error: error.message
+//     });
+//   }
+// });
+
+
+
+
+// Send push notification to all users with batching
 router.post('/send-to-all', async (req, res) => {
   try {
     const { title, body, data = {} } = req.body;
 
-    if (!title || !body) {
+    // -----------------------------------------
+    // 1. Validate request
+    // -----------------------------------------
+    if (
+      typeof title !== 'string' ||
+      !title.trim() ||
+      typeof body !== 'string' ||
+      !body.trim()
+    ) {
       return res.status(400).json({
         success: false,
-        message: 'title and body are required'
+        message: 'title and body are required',
       });
     }
 
-    // Collect tokens from DB
-    const dbUsers = await User.find({ fcmToken: { $ne: null } }).select('fcmToken');
-    const tokens = dbUsers.map(u => u.fcmToken).filter(Boolean);
+    // -----------------------------------------
+    // 2. Get users having FCM tokens
+    // -----------------------------------------
+    const [totalUsers, dbUsers] = await Promise.all([
+      User.countDocuments(),
 
+      User.find({
+        fcmToken: {
+          $exists: true,
+          $nin: [null, ''],
+        },
+      })
+        .select('fcmToken')
+        .lean(),
+    ]);
+
+    // -----------------------------------------
+    // 3. Create unique token list
+    // -----------------------------------------
+    const tokenSet = new Set();
+
+    for (const user of dbUsers) {
+      if (
+        typeof user.fcmToken === 'string' &&
+        user.fcmToken.trim()
+      ) {
+        tokenSet.add(user.fcmToken.trim());
+      }
+    }
+
+    const tokens = Array.from(tokenSet);
+
+    // -----------------------------------------
+    // 4. No tokens
+    // -----------------------------------------
     if (tokens.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'No FCM tokens found'
+        message: 'No FCM tokens found',
+        statistics: {
+          totalUsers,
+          usersWithFcmToken: dbUsers.length,
+          uniqueTokens: 0,
+          batchesSent: 0,
+          successCount: 0,
+          failureCount: 0,
+        },
       });
     }
 
+    // -----------------------------------------
+    // 5. Sanitize notification data
+    // FCM data values must be strings
+    // -----------------------------------------
+    const notificationData = {};
+
+    if (
+      data &&
+      typeof data === 'object' &&
+      !Array.isArray(data)
+    ) {
+      Object.entries(data).forEach(([key, value]) => {
+        if (key && value !== undefined && value !== null) {
+          notificationData[String(key)] = String(value);
+        }
+      });
+    }
+
+    notificationData.click_action =
+      'FLUTTER_NOTIFICATION_CLICK';
+
+    // -----------------------------------------
+    // 6. Firebase message
+    // -----------------------------------------
     const message = {
       notification: {
-        title,
-        body,
+        title: title.trim(),
+        body: body.trim(),
       },
-      data: {
-        ...data,
-        click_action: 'FLUTTER_NOTIFICATION_CLICK',
-      },
+
+      data: notificationData,
+
       android: {
+        priority: 'high',
+
         notification: {
           channelId: 'wadi-cab-notifications',
           priority: 'high',
           defaultSound: true,
         },
       },
+
       apns: {
         payload: {
           aps: {
@@ -204,79 +406,162 @@ router.post('/send-to-all', async (req, res) => {
       },
     };
 
-    // Firebase has a limit of 500 tokens per multicast request
+    // -----------------------------------------
+    // 7. Split into Firebase allowed batches
+    // -----------------------------------------
     const MAX_TOKENS_PER_BATCH = 500;
-    const tokenChunks = chunkArray(tokens, MAX_TOKENS_PER_BATCH);
-    
-    console.log(`📊 Sending notification to ${tokens.length} tokens in ${tokenChunks.length} batches`);
+
+    const tokenChunks = [];
+
+    for (
+      let i = 0;
+      i < tokens.length;
+      i += MAX_TOKENS_PER_BATCH
+    ) {
+      tokenChunks.push(
+        tokens.slice(i, i + MAX_TOKENS_PER_BATCH)
+      );
+    }
 
     let totalSuccessCount = 0;
     let totalFailureCount = 0;
+
+    const invalidTokens = [];
+
     const batchResults = [];
 
-    // Send notifications in batches
-    for (let i = 0; i < tokenChunks.length; i++) {
-      const chunk = tokenChunks[i];
-      console.log(`📤 Sending batch ${i + 1}/${tokenChunks.length} (${chunk.length} tokens)`);
-      
+    // -----------------------------------------
+    // 8. Send each batch
+    // -----------------------------------------
+    for (const [index, chunk] of tokenChunks.entries()) {
       try {
-        const response = await admin.messaging().sendEachForMulticast({
-          tokens: chunk,
-          ...message,
-        });
+        const response =
+          await admin.messaging().sendEachForMulticast({
+            tokens: chunk,
+            ...message,
+          });
 
-        totalSuccessCount += response.successCount;
-        totalFailureCount += response.failureCount;
-        
+        totalSuccessCount += response.successCount || 0;
+        totalFailureCount += response.failureCount || 0;
+
+        // ---------------------------------------
+        // Find invalid/expired tokens
+        // ---------------------------------------
+        if (Array.isArray(response.responses)) {
+          response.responses.forEach((result, tokenIndex) => {
+            if (!result?.success) {
+              const errorCode = result?.error?.code;
+
+              if (
+                errorCode ===
+                  'messaging/registration-token-not-registered' ||
+                errorCode ===
+                  'messaging/invalid-registration-token'
+              ) {
+                const failedToken = chunk[tokenIndex];
+
+                if (failedToken) {
+                  invalidTokens.push(failedToken);
+                }
+              }
+            }
+          });
+        }
+
         batchResults.push({
-          batch: i + 1,
-          tokensInBatch: chunk.length,
-          successCount: response.successCount,
-          failureCount: response.failureCount,
+          batch: index + 1,
+          tokens: chunk.length,
+          successCount: response.successCount || 0,
+          failureCount: response.failureCount || 0,
+          status: 'completed',
         });
 
-        console.log(`✅ Batch ${i + 1} completed: ${response.successCount} success, ${response.failureCount} failures`);
-        
-        // Add small delay between batches to avoid rate limiting
-        if (i < tokenChunks.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+        // Small delay to reduce sudden request pressure
+        if (index < tokenChunks.length - 1) {
+          await new Promise(resolve =>
+            setTimeout(resolve, 100)
+          );
         }
       } catch (batchError) {
-        console.error(`❌ Error in batch ${i + 1}:`, batchError.message);
+        // Do not crash the complete notification process
         totalFailureCount += chunk.length;
-        
+
         batchResults.push({
-          batch: i + 1,
-          tokensInBatch: chunk.length,
+          batch: index + 1,
+          tokens: chunk.length,
           successCount: 0,
           failureCount: chunk.length,
-          error: batchError.message,
+          status: 'failed',
         });
+
+        // Continue with next batch
       }
     }
 
-    console.log('✅ All batches completed:', {
-      totalSuccessCount,
-      totalFailureCount,
-      totalTokens: tokens.length,
-      batchesSent: tokenChunks.length,
-    });
+    // -----------------------------------------
+    // 9. Remove invalid FCM tokens
+    // -----------------------------------------
+    const uniqueInvalidTokens = [
+      ...new Set(invalidTokens),
+    ];
 
-    res.json({
+    let invalidTokensRemoved = 0;
+
+    if (uniqueInvalidTokens.length > 0) {
+      try {
+        const cleanupResult = await User.updateMany(
+          {
+            fcmToken: {
+              $in: uniqueInvalidTokens,
+            },
+          },
+          {
+            $set: {
+              fcmToken: null,
+            },
+          }
+        );
+
+        invalidTokensRemoved =
+          cleanupResult.modifiedCount || 0;
+      } catch (cleanupError) {
+        // Cleanup failure should never break notification response
+        invalidTokensRemoved = 0;
+      }
+    }
+
+    // -----------------------------------------
+    // 10. Final response
+    // -----------------------------------------
+    return res.status(200).json({
       success: true,
-      message: 'Multicast push notification sent in batches',
-      successCount: totalSuccessCount,
-      failureCount: totalFailureCount,
-      totalTokens: tokens.length,
-      batchesSent: tokenChunks.length,
+      message: 'Push notification processing completed',
+
+      statistics: {
+        totalUsers,
+        usersWithFcmToken: dbUsers.length,
+        uniqueTokens: tokens.length,
+
+        batchesSent: tokenChunks.length,
+
+        successCount: totalSuccessCount,
+        failureCount: totalFailureCount,
+
+        invalidTokensFound:
+          uniqueInvalidTokens.length,
+
+        invalidTokensRemoved,
+      },
+
       batchResults,
     });
   } catch (error) {
-    console.error('❌ Error sending multicast push notification:', error);
-    res.status(500).json({
+    // -----------------------------------------
+    // Global safety handler
+    // -----------------------------------------
+    return res.status(500).json({
       success: false,
-      message: 'Failed to send multicast push notification',
-      error: error.message
+      message: 'Failed to send push notification',
     });
   }
 });

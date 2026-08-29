@@ -5,6 +5,7 @@ const { authenticate } = require('../middleware/auth');
 
 // Public routes
 router.get('/check', appVersionController.checkUpdate);
+router.get('/app-version/check', appVersionController.checkUpdate);
 
 // Admin routes (no authentication required)
 router.get('/admin/app-versions', appVersionController.getAllVersions);

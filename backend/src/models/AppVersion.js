@@ -12,6 +12,11 @@ const appVersionSchema = new mongoose.Schema({
     required: [true, 'Download URL is required'],
     trim: true
   },
+  playStoreUrl: {
+    type: String,
+    trim: true,
+    default: 'https://play.google.com/store/apps/details?id=com.MP.Waadi_App'
+  },
   releaseNotes: {
     type: String,
     trim: true,
@@ -86,7 +91,7 @@ appVersionSchema.statics.getLatestVersion = async function(platform = 'both') {
     }
     
     const latestVersion = await this.findOne(query)
-      .sort({ version: -1 })
+      .sort({ createdAt: -1, version: -1 })
       .lean();
     
     return latestVersion;
@@ -96,37 +101,17 @@ appVersionSchema.statics.getLatestVersion = async function(platform = 'both') {
   }
 };
 
-// Static method to check if update is required
-// appVersionSchema.statics.checkUpdateRequired = async function(currentVersion, platform = 'both') {
-//   try {
-//     const latestVersion = await this.getLatestVersion(platform);
-    
-//     if (!latestVersion) {
-//       return { updateRequired: false, latestVersion: null };
-//     }
-    
-//     const comparison = compareVersions(currentVersion, latestVersion.version);
-    
-//     return {
-//       updateRequired: comparison < 0 || latestVersion.isForced,
-//       latestVersion: latestVersion,
-//       isForced: latestVersion.isForced,
-//       minSupportedVersion: latestVersion.minSupportedVersion
-//     };
-//   } catch (error) {
-//     console.error('Error checking update requirement:', error);
-//     throw error;
-//   }
-// };
-
 appVersionSchema.statics.checkUpdateRequired = async function(currentVersion, platform = 'both') {
   try {
     const latestVersion = await this.getLatestVersion(platform);
 
     if (!latestVersion) {
       return {
+        hasUpdate: false,
         updateRequired: false,
-        latestVersion: null
+        latestVersion: null,
+        isForced: false,
+        minSupportedVersion: '0.1.0'
       };
     }
 
@@ -135,27 +120,28 @@ appVersionSchema.statics.checkUpdateRequired = async function(currentVersion, pl
       latestVersion.version
     );
 
+    const minVersion = latestVersion.minSupportedVersion || '0.1.0';
     const currentVsMinimum = compareVersions(
       currentVersion,
-      latestVersion.minSupportedVersion
+      minVersion
     );
 
-    return {
-      // New version available
-      hasUpdate: currentVsLatest < 0,
+    const isBelowMinimum = currentVsMinimum < 0;
+    const isBelowLatest = currentVsLatest < 0;
+    const isForcedUpdate = isBelowMinimum || (isBelowLatest && Boolean(latestVersion.isForced));
 
-      // Force update only if below minimum supported version
-      updateRequired:
-        currentVsMinimum < 0 ||
-        (currentVsLatest < 0 && latestVersion.isForced),
+    return {
+      // New version available only if current is strictly older than latest
+      hasUpdate: isBelowLatest,
+
+      // Force update if below minimum supported version or forced by admin
+      updateRequired: isForcedUpdate,
 
       latestVersion,
 
-      isForced:
-        currentVsMinimum < 0 ||
-        latestVersion.isForced,
+      isForced: isForcedUpdate,
 
-      minSupportedVersion: latestVersion.minSupportedVersion
+      minSupportedVersion: minVersion
     };
 
   } catch (error) {
@@ -166,26 +152,30 @@ appVersionSchema.statics.checkUpdateRequired = async function(currentVersion, pl
 
 // Helper function to compare versions
 function compareVersions(version1, version2) {
-  const v1 = version1.split('.').map(Number);
-  const v2 = version2.split('.').map(Number);
-  
-  const minLength = Math.min(v1.length, v2.length);
-  
-  for (let i = 0; i < minLength; i++) {
-    if (v1[i] < v2[i]) {
+  if (!version1 && !version2) return 0;
+  if (!version1) return -1;
+  if (!version2) return 1;
+
+  // Clean version strings (remove 'v', leading/trailing whitespace)
+  const clean1 = String(version1).trim().replace(/^v/i, '');
+  const clean2 = String(version2).trim().replace(/^v/i, '');
+
+  const parts1 = clean1.split('.').map(p => parseInt(p, 10) || 0);
+  const parts2 = clean2.split('.').map(p => parseInt(p, 10) || 0);
+
+  const maxLength = Math.max(parts1.length, parts2.length);
+
+  for (let i = 0; i < maxLength; i++) {
+    const num1 = parts1[i] !== undefined ? parts1[i] : 0;
+    const num2 = parts2[i] !== undefined ? parts2[i] : 0;
+
+    if (num1 < num2) {
       return -1; // version1 is older
-    } else if (v1[i] > v2[i]) {
+    } else if (num1 > num2) {
       return 1; // version1 is newer
     }
   }
-  
-  // If all common components are equal, the longer version is considered newer
-  if (v1.length < v2.length) {
-    return -1;
-  } else if (v1.length > v2.length) {
-    return 1;
-  }
-  
+
   return 0; // versions are equal
 }
 
